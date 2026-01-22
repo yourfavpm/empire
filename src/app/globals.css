@@ -1,0 +1,331 @@
+@import "tailwindcss";
+
+/* Theme CSS Variables */
+:root {
+  /* Light theme (default) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-nav: rgba(255, 255, 255, 0.95);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+
+  /* Subtle teal accent instead of amber */
+  --accent-primary: #0891b2;
+  --accent-secondary: #0e7490;
+  --accent-bg: rgba(8, 145, 178, 0.08);
+  --accent-border: rgba(8, 145, 178, 0.25);
+
+  --success: #059669;
+  --error: #dc2626;
+  --warning: #d97706;
+}
+
+.dark {
+  /* Dark theme */
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
+  --bg-card: rgba(30, 41, 59, 0.5);
+  --bg-card-hover: rgba(30, 41, 59, 0.8);
+  --bg-nav: rgba(15, 23, 42, 0.9);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
+
+  --border-primary: rgba(51, 65, 85, 0.5);
+  --border-secondary: #334155;
+
+  /* Subtle cyan accent for dark mode */
+  --accent-primary: #22d3ee;
+  --accent-secondary: #06b6d4;
+  --accent-bg: rgba(34, 211, 238, 0.1);
+  --accent-border: rgba(34, 211, 238, 0.25);
+
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ===== DARK THEME OVERRIDES ===== */
+.dark .bg-slate-950 {
+  background-color: #020617;
+}
+
+.dark .bg-slate-900 {
+  background-color: #0f172a;
+}
+
+.dark .bg-slate-800 {
+  background-color: #1e293b;
+}
+
+.dark .text-white {
+  color: #f8fafc;
+}
+
+.dark .text-slate-400 {
+  color: #94a3b8;
+}
+
+.dark .text-slate-300 {
+  color: #cbd5e1;
+}
+
+.dark .text-slate-500 {
+  color: #64748b;
+}
+
+.dark .border-slate-800 {
+  border-color: #1e293b;
+}
+
+.dark .border-slate-700 {
+  border-color: #334155;
+}
+
+/* Accent colors - cyan for dark mode */
+.dark .text-cyan-400 {
+  color: #22d3ee;
+}
+
+.dark .bg-cyan-500\/10 {
+  background-color: rgba(6, 182, 212, 0.1);
+}
+
+.dark .bg-cyan-500\/20 {
+  background-color: rgba(6, 182, 212, 0.15);
+}
+
+.dark .border-cyan-500\/20 {
+  border-color: rgba(6, 182, 212, 0.2);
+}
+
+.dark .border-cyan-500\/30 {
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+/* ===== LIGHT THEME OVERRIDES ===== */
+/* Main backgrounds */
+:root:not(.dark) .bg-slate-950 {
+  background-color: #ffffff;
+}
+
+:root:not(.dark) .bg-slate-900 {
+  background-color: #f8fafc;
+}
+
+:root:not(.dark) .bg-slate-800 {
+  background-color: #f1f5f9;
+}
+
+/* Text colors - ensure contrast */
+:root:not(.dark) .text-white {
+  color: #0f172a;
+}
+
+:root:not(.dark) .text-slate-400 {
+  color: #475569;
+}
+
+:root:not(.dark) .text-slate-300 {
+  color: #334155;
+}
+
+:root:not(.dark) .text-slate-500 {
+  color: #64748b;
+}
+
+/* Border colors */
+:root:not(.dark) .border-slate-800 {
+  border-color: #e2e8f0;
+}
+
+:root:not(.dark) .border-slate-700 {
+  border-color: #cbd5e1;
+}
+
+/* Nav backgrounds with opacity */
+:root:not(.dark) .bg-slate-900\/80 {
+  background-color: rgba(248, 250, 252, 0.95);
+}
+
+:root:not(.dark) .bg-slate-900\/50 {
+  background-color: rgba(248, 250, 252, 0.8);
+}
+
+:root:not(.dark) .bg-slate-900\/30 {
+  background-color: rgba(248, 250, 252, 0.6);
+}
+
+/* Card backgrounds with opacity */
+:root:not(.dark) .bg-slate-800\/50 {
+  background-color: rgba(241, 245, 249, 0.9);
+}
+
+:root:not(.dark) .bg-slate-800\/80 {
+  background-color: rgba(241, 245, 249, 0.95);
+}
+
+:root:not(.dark) .bg-slate-800\/30 {
+  background-color: rgba(241, 245, 249, 0.6);
+}
+
+/* Border with opacity */
+:root:not(.dark) .border-slate-700\/50 {
+  border-color: rgba(203, 213, 225, 0.8);
+}
+
+:root:not(.dark) .border-slate-800\/50 {
+  border-color: rgba(226, 232, 240, 0.8);
+}
+
+:root:not(.dark) .border-slate-700\/30 {
+  border-color: rgba(203, 213, 225, 0.5);
+}
+
+/* Cyan accent colors - light mode */
+:root:not(.dark) .text-cyan-400 {
+  color: #0891b2;
+}
+
+:root:not(.dark) .text-cyan-300 {
+  color: #06b6d4;
+}
+
+:root:not(.dark) .bg-cyan-500\/10 {
+  background-color: rgba(8, 145, 178, 0.08);
+}
+
+:root:not(.dark) .bg-cyan-500\/20 {
+  background-color: rgba(8, 145, 178, 0.12);
+}
+
+:root:not(.dark) .border-cyan-500\/20 {
+  border-color: rgba(8, 145, 178, 0.2);
+}
+
+:root:not(.dark) .border-cyan-500\/30 {
+  border-color: rgba(8, 145, 178, 0.3);
+}
+
+:root:not(.dark) .border-cyan-500\/50 {
+  border-color: rgba(8, 145, 178, 0.4);
+}
+
+/* Button text - ensure visibility */
+:root:not(.dark) .text-slate-900 {
+  color: #0f172a;
+}
+
+/* Green/success colors */
+:root:not(.dark) .text-green-400 {
+  color: #059669;
+}
+
+:root:not(.dark) .bg-green-500\/20 {
+  background-color: rgba(5, 150, 105, 0.15);
+}
+
+:root:not(.dark) .bg-green-600\/20 {
+  background-color: rgba(5, 150, 105, 0.15);
+}
+
+:root:not(.dark) .border-green-500\/30 {
+  border-color: rgba(5, 150, 105, 0.35);
+}
+
+/* Blue colors */
+:root:not(.dark) .text-blue-400 {
+  color: #2563eb;
+}
+
+:root:not(.dark) .bg-blue-500\/20 {
+  background-color: rgba(37, 99, 235, 0.12);
+}
+
+:root:not(.dark) .bg-blue-600\/20 {
+  background-color: rgba(37, 99, 235, 0.12);
+}
+
+:root:not(.dark) .border-blue-500\/30 {
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+/* Emerald colors */
+:root:not(.dark) .text-emerald-400 {
+  color: #059669;
+}
+
+:root:not(.dark) .bg-emerald-500\/20 {
+  background-color: rgba(5, 150, 105, 0.15);
+}
+
+/* Red/error colors */
+:root:not(.dark) .text-red-400 {
+  color: #dc2626;
+}
+
+:root:not(.dark) .bg-red-500\/20 {
+  background-color: rgba(220, 38, 38, 0.12);
+}
+
+:root:not(.dark) .bg-red-500\/10 {
+  background-color: rgba(220, 38, 38, 0.08);
+}
+
+:root:not(.dark) .border-red-500\/20 {
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+/* Violet colors (admin) */
+:root:not(.dark) .text-violet-400 {
+  color: #7c3aed;
+}
+
+:root:not(.dark) .bg-violet-500\/20 {
+  background-color: rgba(124, 58, 237, 0.12);
+}
+
+:root:not(.dark) .bg-violet-500\/10 {
+  background-color: rgba(124, 58, 237, 0.08);
+}
+
+/* Modal backgrounds */
+:root:not(.dark) .bg-slate-950\/80 {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+:root:not(.dark) .bg-slate-900\/95 {
+  background-color: rgba(255, 255, 255, 0.98);
+}
+
+:root:not(.dark) .bg-slate-800\/80 {
+  background-color: rgba(241, 245, 249, 0.95);
+}
+
+/* Hero section - subtle blurs */
+:root:not(.dark) .bg-cyan-500\/10 {
+  background-color: rgba(6, 182, 212, 0.05);
+}
+
+:root:not(.dark) .bg-teal-500\/10 {
+  background-color: rgba(20, 184, 166, 0.05);
+}
