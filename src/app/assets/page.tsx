@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Navbar, Footer } from '@/components/layout';
@@ -18,7 +18,7 @@ interface Subcategory {
     isOutOfStock: boolean;
 }
 
-export default function AssetsPage() {
+function AssetsContent() {
     const searchParams = useSearchParams();
     const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
     const [loading, setLoading] = useState(true);
@@ -156,5 +156,13 @@ export default function AssetsPage() {
             <Footer />
             <WhatsAppFAB phoneNumber="08071400331" />
         </div>
+    );
+}
+
+export default function AssetsPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>}>
+            <AssetsContent />
+        </Suspense>
     );
 }

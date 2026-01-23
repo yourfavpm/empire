@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, StatusBadge } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -21,7 +21,7 @@ interface Payment {
     };
 }
 
-export default function AdminPaymentsPage() {
+function AdminPaymentsContent() {
     const searchParams = useSearchParams();
     const [payments, setPayments] = useState<Payment[]>([]);
     const [pendingCount, setPendingCount] = useState(0);
@@ -231,5 +231,13 @@ export default function AdminPaymentsPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function AdminPaymentsPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center p-20 text-white">Loading payments...</div>}>
+            <AdminPaymentsContent />
+        </Suspense>
     );
 }

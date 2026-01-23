@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Badge } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -22,7 +22,7 @@ interface CryptoAddress {
     address: string;
 }
 
-export default function WalletPage() {
+function WalletContent() {
     const searchParams = useSearchParams();
     const [wallet, setWallet] = useState<WalletData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -318,8 +318,8 @@ export default function WalletPage() {
                                             key={crypto.network}
                                             onClick={() => setSelectedNetwork(crypto.network)}
                                             className={`p-3 border rounded-xl text-center transition-all ${selectedNetwork === crypto.network
-                                                    ? 'border-violet-500 bg-violet-500/10'
-                                                    : 'border-slate-700 hover:border-slate-600'
+                                                ? 'border-violet-500 bg-violet-500/10'
+                                                : 'border-slate-700 hover:border-slate-600'
                                                 }`}
                                         >
                                             <span className="text-white font-medium">{crypto.network}</span>
@@ -410,5 +410,13 @@ export default function WalletPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function WalletPage() {
+    return (
+        <Suspense fallback={<div className="max-w-4xl mx-auto px-4 py-20 text-center text-white">Loading wallet balance...</div>}>
+            <WalletContent />
+        </Suspense>
     );
 }
