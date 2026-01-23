@@ -85,6 +85,37 @@ NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY="pk_xxx"
 
 ---
 
+## 🛠 Troubleshooting Auth & Database
+
+If you encounter "Load Failed" or cannot create accounts/sign in on Vercel:
+
+### 1. Run Diagnostics
+Visit `https://your-app.vercel.app/api/debug-db` in your browser.
+This will tell you:
+- If environment variables are correctly loaded.
+- If the app can connect to Supabase.
+- If the `User` table exists.
+
+### 2. Seed Admin Account
+If you cannot log in as an admin:
+1. Ensure `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set in Vercel environment variables.
+2. Visit `https://your-app.vercel.app/api/admin/setup-seed` in your browser.
+3. You should see a success message. You can then log in at `/login`.
+
+### 3. Verify Environment Variables
+Ensure these are set in Vercel (Project Settings -> Environment Variables):
+- `AUTH_SECRET`: Generate one using `openssl rand -base64 32`. (Crucial for NextAuth v5)
+- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase Project URL.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase Anon Key.
+- `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase Service Role Key (Secret).
+- `NEXTAUTH_URL`: `https://your-domain.vercel.app` (No trailing slash).
+
+### 4. Database Schema
+If diagnostics show "User table does not exist", copy the content of `supabase_init.sql` again and run it in the Supabase SQL Editor. This script now includes full `CREATE TABLE` and `RPC` definitions.
+
+---
+
 ## ❓ Support
 - Email: dyempiremarketplace@gmail.com
 - Repository: https://github.com/yourfavpm/DY-Empire
+

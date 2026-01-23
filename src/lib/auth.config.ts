@@ -1,17 +1,17 @@
-import NextAuth from 'next-auth';
+import type { NextAuthConfig } from 'next-auth';
 
 // Edge-compatible auth config without Node.js-specific imports
 export const authConfig = {
-    providers: [], // Providers configured separately for API routes
+    providers: [], // Providers configured separately in auth.ts
     callbacks: {
-        async jwt({ token, user }: { token: any; user?: any }) {
+        async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
                 token.role = user.role;
             }
             return token;
         },
-        async session({ session, token }: { session: any; token: any }) {
+        async session({ session, token }) {
             if (session.user) {
                 session.user.id = token.id as string;
                 session.user.role = token.role as 'BUYER' | 'ADMIN';
@@ -24,10 +24,9 @@ export const authConfig = {
         error: '/login',
     },
     session: {
-        strategy: 'jwt' as const,
+        strategy: 'jwt',
         maxAge: 30 * 24 * 60 * 60,
     },
     trustHost: true,
-};
+} satisfies NextAuthConfig;
 
-export const { auth } = NextAuth(authConfig);

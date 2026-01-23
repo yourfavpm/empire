@@ -2,9 +2,11 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from './supabase';
+import { authConfig } from './auth.config';
 
 // Full auth config with credentials provider (Node.js runtime only)
 export const { handlers, signIn, signOut, auth } = NextAuth({
+    ...authConfig,
     providers: [
         Credentials({
             name: 'credentials',
@@ -46,29 +48,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             },
         }),
     ],
-    callbacks: {
-        async jwt({ token, user }) {
-            if (user) {
-                token.id = user.id;
-                token.role = user.role;
-            }
-            return token;
-        },
-        async session({ session, token }) {
-            if (session.user) {
-                session.user.id = token.id as string;
-                session.user.role = token.role as 'BUYER' | 'ADMIN';
-            }
-            return session;
-        },
-    },
-    pages: {
-        signIn: '/login',
-        error: '/login',
-    },
-    session: {
-        strategy: 'jwt',
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-    },
-    trustHost: true,
 });
+
