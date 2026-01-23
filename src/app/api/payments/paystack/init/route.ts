@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { initializePayment } from '@/lib/paystack';
 import { generatePaymentReference } from '@/lib/utils';
 
@@ -35,15 +35,22 @@ export async function POST(request: NextRequest) {
         const reference = generatePaymentReference();
 
         // Create payment record
-        const payment = await prisma.payment.create({
-            data: {
+        const { data: payment, error: createError } = await supabaseAdmin
+            .from('Payment')
+            .insert({
                 userId: session.user.id,
                 amount,
                 type: 'PAYSTACK',
                 status: 'PENDING',
                 reference,
-            },
-        });
+            })
+            .select()
+            .single();
+
+        if (createError) {
+            console.error('Paystack init create payment error:', createError);
+            throw createError;
+        }
 
         // Initialize Paystack payment
         const paystackResponse = await initializePayment(
@@ -57,12 +64,17 @@ export async function POST(request: NextRequest) {
         );
 
         // Update payment with Paystack reference
-        await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
+        const { error: updateError } = await supabaseAdmin
+            .from('Payment')
+            .update({
                 paystackRef: paystackResponse.data.reference,
-            },
-        });
+            })
+            .eq('id', payment.id);
+
+        if (updateError) {
+            console.error('Paystack init update payment error:', updateError);
+            // Non-fatal, paystack init already succeeded
+        }
 
         return NextResponse.json({
             message: 'Payment initialized',

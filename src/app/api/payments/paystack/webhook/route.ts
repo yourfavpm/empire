@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { validateWebhookSignature, getPaymentStatus } from '@/lib/paystack';
 import { toNumber } from '@/lib/utils';
 
@@ -24,74 +24,23 @@ export async function POST(request: NextRequest) {
 
         const data = event.data;
         const reference = data.reference;
+        const amount = data.amount / 100; // Paystack amount is in kobo
 
-        // Find payment by reference
-        const payment = await prisma.payment.findUnique({
-            where: { reference },
-            include: {
-                user: {
-                    include: { wallet: true },
-                },
-            },
+        // Call Supabase RPC for atomic fulfillment
+        const { data: rpcData, error } = await supabaseAdmin.rpc('handle_payment_success', {
+            p_reference: reference,
+            p_amount: amount
         });
 
-        if (!payment) {
-            console.warn(`Payment not found for reference: ${reference}`);
-            return NextResponse.json({ message: 'Payment not found' });
+        if (error) {
+            console.error('Webhook RPC error:', error);
+            // If payment wasn't found in our DB, RPC might fail
+            return NextResponse.json({ error: error.message || 'Webhook processing failed' }, { status: 400 });
         }
 
-        // Check if already processed (idempotency)
-        if (payment.status === 'VERIFIED') {
-            console.log(`Payment already verified: ${reference}`);
+        if (rpcData.status === 'already_processed') {
             return NextResponse.json({ message: 'Already processed' });
         }
-
-        const status = getPaymentStatus(data.status);
-
-        if (status !== 'VERIFIED') {
-            await prisma.payment.update({
-                where: { id: payment.id },
-                data: { status },
-            });
-            return NextResponse.json({ message: 'Payment status updated' });
-        }
-
-        // Process successful payment - update wallet in transaction
-        await prisma.$transaction(async (tx) => {
-            // Get or create wallet
-            let wallet = payment.user.wallet;
-            if (!wallet) {
-                wallet = await tx.wallet.create({
-                    data: { userId: payment.userId, balance: 0 },
-                });
-            }
-
-            const newBalance = toNumber(wallet.balance) + toNumber(payment.amount);
-
-            // Update wallet balance
-            await tx.wallet.update({
-                where: { id: wallet.id },
-                data: { balance: newBalance },
-            });
-
-            // Create transaction record
-            await tx.transaction.create({
-                data: {
-                    walletId: wallet.id,
-                    type: 'CREDIT',
-                    amount: payment.amount,
-                    description: `Wallet funded via Paystack`,
-                    paymentId: payment.id,
-                    balanceAfter: newBalance,
-                },
-            });
-
-            // Update payment status
-            await tx.payment.update({
-                where: { id: payment.id },
-                data: { status: 'VERIFIED' },
-            });
-        });
 
         console.log(`Payment verified and wallet credited: ${reference}`);
         return NextResponse.json({ message: 'Payment verified' });

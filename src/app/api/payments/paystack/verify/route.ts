@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { verifyPayment, getPaymentStatus } from '@/lib/paystack';
 import { toNumber } from '@/lib/utils';
 
@@ -24,16 +24,16 @@ export async function POST(request: NextRequest) {
         }
 
         // Find payment
-        const payment = await prisma.payment.findUnique({
-            where: { reference },
-            include: {
-                user: {
-                    include: { wallet: true },
-                },
-            },
-        });
+        const { data: payment, error: fetchError } = await supabaseAdmin
+            .from('Payment')
+            .select(`
+                *,
+                user:User(*)
+            `)
+            .eq('reference', reference)
+            .single();
 
-        if (!payment) {
+        if (fetchError || !payment) {
             return NextResponse.json(
                 { error: 'Payment not found' },
                 { status: 404 }
@@ -61,10 +61,10 @@ export async function POST(request: NextRequest) {
         const status = getPaymentStatus(paystackResponse.data.status);
 
         if (status !== 'VERIFIED') {
-            await prisma.payment.update({
-                where: { id: payment.id },
-                data: { status },
-            });
+            await supabaseAdmin
+                .from('Payment')
+                .update({ status })
+                .eq('id', payment.id);
 
             return NextResponse.json({
                 message: 'Payment not successful',
@@ -72,38 +72,16 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Process successful payment
-        await prisma.$transaction(async (tx) => {
-            let wallet = payment.user.wallet;
-            if (!wallet) {
-                wallet = await tx.wallet.create({
-                    data: { userId: payment.userId, balance: 0 },
-                });
-            }
-
-            const newBalance = toNumber(wallet.balance) + toNumber(payment.amount);
-
-            await tx.wallet.update({
-                where: { id: wallet.id },
-                data: { balance: newBalance },
-            });
-
-            await tx.transaction.create({
-                data: {
-                    walletId: wallet.id,
-                    type: 'CREDIT',
-                    amount: payment.amount,
-                    description: 'Wallet funded via Paystack',
-                    paymentId: payment.id,
-                    balanceAfter: newBalance,
-                },
-            });
-
-            await tx.payment.update({
-                where: { id: payment.id },
-                data: { status: 'VERIFIED' },
-            });
+        // Process successful payment using RPC for atomicity
+        const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('handle_payment_success', {
+            p_reference: reference,
+            p_amount: toNumber(payment.amount)
         });
+
+        if (rpcError) {
+            console.error('Verify RPC error:', rpcError);
+            throw rpcError;
+        }
 
         return NextResponse.json({
             message: 'Payment verified successfully',

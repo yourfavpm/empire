@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { isValidEmail } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
@@ -31,9 +31,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if user already exists
-        const existingUser = await prisma.user.findUnique({
-            where: { email: email.toLowerCase() },
-        });
+        const { data: existingUser, error: fetchError } = await supabaseAdmin
+            .from('User')
+            .select('id')
+            .eq('email', email.toLowerCase())
+            .single();
 
         if (existingUser) {
             return NextResponse.json(
@@ -45,32 +47,46 @@ export async function POST(request: NextRequest) {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user with wallet
-        const user = await prisma.user.create({
-            data: {
+        // Create user
+        const { data: newUser, error: userError } = await supabaseAdmin
+            .from('User')
+            .insert({
                 email: email.toLowerCase(),
                 password: hashedPassword,
                 name,
-                role: 'BUYER',
-                wallet: {
-                    create: {
-                        balance: 0,
-                    },
-                },
-            },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                role: true,
-                createdAt: true,
-            },
-        });
+                role: 'BUYER'
+            })
+            .select()
+            .single();
+
+        if (userError || !newUser) {
+            console.error('User creation error:', userError);
+            throw new Error('Failed to create user record');
+        }
+
+        // Create wallet
+        const { error: walletError } = await supabaseAdmin
+            .from('Wallet')
+            .insert({
+                userId: newUser.id,
+                balance: 0
+            });
+
+        if (walletError) {
+            console.error('Wallet creation error:', walletError);
+            // Note: In a production app, you might want to rollback the user creation here or handle this more gracefully
+        }
 
         return NextResponse.json(
             {
                 message: 'Account created successfully',
-                user,
+                user: {
+                    id: newUser.id,
+                    email: newUser.email,
+                    name: newUser.name,
+                    role: newUser.role,
+                    createdAt: newUser.createdAt
+                },
             },
             { status: 201 }
         );

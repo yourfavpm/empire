@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { toNumber } from '@/lib/utils';
 
 // GET /api/admin/users - List all buyers (Admin only)
@@ -17,59 +17,50 @@ export async function GET(request: NextRequest) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
 
-        const where: Record<string, unknown> = {
-            role: 'BUYER',
-        };
+        let query = supabaseAdmin
+            .from('User')
+            .select(`
+                id,
+                email,
+                name,
+                createdAt,
+                wallet:Wallet(balance),
+                unlockedAssets:AssetAccess(count),
+                payments:Payment(count)
+            `, { count: 'exact' })
+            .eq('role', 'BUYER');
 
         if (search) {
-            where.OR = [
-                { name: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-            ];
+            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
         }
 
-        const [users, total] = await Promise.all([
-            prisma.user.findMany({
-                where,
-                select: {
-                    id: true,
-                    email: true,
-                    name: true,
-                    createdAt: true,
-                    wallet: {
-                        select: {
-                            balance: true,
-                        },
-                    },
-                    _count: {
-                        select: {
-                            unlockedAssets: true,
-                            payments: true,
-                        },
-                    },
-                },
-                orderBy: { createdAt: 'desc' },
-                skip: (page - 1) * limit,
-                take: limit,
-            }),
-            prisma.user.count({ where }),
-        ]);
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        const { data: users, count: total, error } = await query
+            .order('createdAt', { ascending: false })
+            .range(from, to);
+
+        if (error) {
+            console.error('Get users error:', error);
+            throw error;
+        }
 
         return NextResponse.json({
-            users: users.map((user) => ({
+            users: users.map((user: any) => ({
                 id: user.id,
                 email: user.email,
                 name: user.name,
                 createdAt: user.createdAt,
-                walletBalance: user.wallet ? toNumber(user.wallet.balance) : 0,
-                unlockedAssetsCount: user._count.unlockedAssets,
-                paymentsCount: user._count.payments,
+                walletBalance: user.wallet?.[0] ? toNumber(user.wallet[0].balance) : 0,
+                unlockedAssetsCount: user.unlockedAssets?.[0]?.count || 0,
+                paymentsCount: user.payments?.[0]?.count || 0,
             })),
             pagination: {
                 page,
                 limit,
-                total,
-                totalPages: Math.ceil(total / limit),
+                total: total || 0,
+                totalPages: Math.ceil((total || 0) / limit),
             },
         });
     } catch (error) {

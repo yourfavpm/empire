@@ -1,38 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 
-// GET /api/assets/featured - Get featured assets grouped by category
+// GET /api/assets/featured - Get featured assets (subcategories) grouped by category
 export async function GET(req: NextRequest) {
     try {
-        // Get all featured assets that are active
-        const featuredAssets = await prisma.asset.findMany({
-            where: {
-                featured: true,
-                status: 'ACTIVE',
-            },
-            orderBy: [
-                { category: 'asc' },
-                { featuredOrder: 'asc' },
-            ],
-            select: {
-                id: true,
-                title: true,
-                category: true,
-                platformType: true,
-                price: true,
-                shortDescription: true,
-                images: true,
-            },
-        });
+        // Get all featured subcategories
+        const { data: featuredAssets, error } = await supabaseAdmin
+            .from('Subcategory')
+            .select(`
+                id,
+                title,
+                price,
+                publicDescription,
+                category:Category(name)
+            `)
+            .eq('featured', true)
+            .order('featuredOrder', { ascending: true });
 
-        // Group by category
-        const groupedAssets: Record<string, typeof featuredAssets> = {};
+        if (error) {
+            console.error('Get featured assets error:', error);
+            throw error;
+        }
 
-        for (const asset of featuredAssets) {
-            if (!groupedAssets[asset.category]) {
-                groupedAssets[asset.category] = [];
+        // Group by category name
+        const groupedAssets: Record<string, any[]> = {};
+
+        for (const asset of (featuredAssets || [])) {
+            const categoryName = (asset.category as any)?.name || 'Uncategorized';
+            if (!groupedAssets[categoryName]) {
+                groupedAssets[categoryName] = [];
             }
-            groupedAssets[asset.category].push(asset);
+            groupedAssets[categoryName].push({
+                id: asset.id,
+                title: asset.title,
+                category: categoryName,
+                price: asset.price,
+                shortDescription: asset.publicDescription?.substring(0, 100) + '...',
+            });
         }
 
         // Convert to array format for easier frontend consumption

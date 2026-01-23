@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { toNumber } from '@/lib/utils';
 
 // GET /api/wallet - Get current user's wallet
@@ -12,27 +12,35 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const wallet = await prisma.wallet.findUnique({
-            where: { userId: session.user.id },
-            include: {
-                transactions: {
-                    orderBy: { createdAt: 'desc' },
-                    take: 20,
-                },
-            },
-        });
+        const { data: wallet, error } = await supabaseAdmin
+            .from('Wallet')
+            .select(`
+                *,
+                transactions:Transaction(*)
+            `)
+            .eq('userId', session.user.id)
+            .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found" for .single()
+            console.error('Fetch wallet error:', error);
+            throw error;
+        }
 
         if (!wallet) {
             // Create wallet if it doesn't exist
-            const newWallet = await prisma.wallet.create({
-                data: {
+            const { data: newWallet, error: createError } = await supabaseAdmin
+                .from('Wallet')
+                .insert({
                     userId: session.user.id,
                     balance: 0,
-                },
-                include: {
-                    transactions: true,
-                },
-            });
+                })
+                .select()
+                .single();
+
+            if (createError) {
+                console.error('Create wallet error:', createError);
+                throw createError;
+            }
 
             return NextResponse.json({
                 balance: 0,
@@ -41,9 +49,14 @@ export async function GET() {
             });
         }
 
+        // Sort transactions descending (Supabase might not guarantee order on related selection without complex syntax)
+        const sortedTransactions = (wallet.transactions || []).sort((a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ).slice(0, 20);
+
         return NextResponse.json({
             balance: toNumber(wallet.balance),
-            transactions: wallet.transactions.map((tx) => ({
+            transactions: sortedTransactions.map((tx: any) => ({
                 ...tx,
                 amount: toNumber(tx.amount),
                 balanceAfter: toNumber(tx.balanceAfter),

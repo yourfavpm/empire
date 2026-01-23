@@ -2,356 +2,342 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Badge, StatusBadge } from '@/components/ui';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { toast } from 'react-hot-toast';
 
-interface Asset {
-    id: string;
-    title: string;
-    category: string;
-    platformType: string;
-    price: number;
-    shortDescription: string;
-    status: string;
-    featured: boolean;
-    featuredOrder: number;
-    createdAt: string;
-    unlockCount: number;
+interface StockMetadata {
+    available: number;
+    sold: number;
+    total: number;
 }
 
-export default function AdminAssetsPage() {
-    const [assets, setAssets] = useState<Asset[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState(false);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
+interface Subcategory {
+    id: string;
+    title: string;
+    price: number;
+    publicDescription: string;
+    countries: string[];
+    category: string;
+    categoryId: string;
+    stock: StockMetadata;
+}
 
-    // Form fields
-    const [title, setTitle] = useState('');
-    const [category, setCategory] = useState('');
-    const [platformType, setPlatformType] = useState('');
-    const [price, setPrice] = useState('');
-    const [shortDescription, setShortDescription] = useState('');
-    const [fullDescription, setFullDescription] = useState('');
-    const [status, setStatus] = useState('DRAFT');
+interface Category {
+    id: string;
+    name: string;
+    _count: { subcategories: number };
+}
+
+interface AssetUnit {
+    id: string;
+    lockedDescription: string;
+    status: 'AVAILABLE' | 'SOLD';
+    purchasedBy?: { name: string, email: string };
+    purchasedAt?: string;
+    orderId?: string;
+}
+
+export default function AdminAssetManagement() {
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+    const [units, setUnits] = useState<AssetUnit[]>([]);
+
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+    const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null);
+
+    const [loading, setLoading] = useState(true);
+    const [showCategoryForm, setShowCategoryForm] = useState(false);
+    const [showSubcategoryForm, setShowSubcategoryForm] = useState(false);
+    const [showUnitForm, setShowUnitForm] = useState(false);
+
+    // Form States
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newSubTitle, setNewSubTitle] = useState('');
+    const [newSubPrice, setNewSubPrice] = useState('');
+    const [newSubDesc, setNewSubDesc] = useState('');
+    const [newSubCountries, setNewSubCountries] = useState('');
+    const [bulkUnits, setBulkUnits] = useState('');
 
     useEffect(() => {
-        fetchAssets();
+        fetchCategories();
     }, []);
 
-    const fetchAssets = async () => {
-        try {
-            const response = await fetch('/api/assets?limit=100');
-            const data = await response.json();
-            if (response.ok) setAssets(data.assets);
-        } catch (error) {
-            console.error('Failed to fetch assets:', error);
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (selectedCategoryId) {
+            fetchSubcategories(selectedCategoryId);
+            setSelectedSubcategoryId(null);
+            setUnits([]);
         }
+    }, [selectedCategoryId]);
+
+    useEffect(() => {
+        if (selectedSubcategoryId) {
+            fetchUnits(selectedSubcategoryId);
+        }
+    }, [selectedSubcategoryId]);
+
+    const fetchCategories = async () => {
+        const res = await fetch('/api/admin/categories');
+        const data = await res.json();
+        if (res.ok) setCategories(data.categories);
+        setLoading(false);
     };
 
-    const resetForm = () => {
-        setTitle('');
-        setCategory('');
-        setPlatformType('');
-        setPrice('');
-        setShortDescription('');
-        setFullDescription('');
-        setStatus('DRAFT');
-        setEditingId(null);
-        setError('');
+    const fetchSubcategories = async (catId: string) => {
+        const res = await fetch(`/api/admin/subcategories?categoryId=${catId}`);
+        const data = await res.json();
+        if (res.ok) setSubcategories(data.subcategories);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const fetchUnits = async (subId: string) => {
+        const res = await fetch(`/api/admin/asset-units?subcategoryId=${subId}`);
+        const data = await res.json();
+        if (res.ok) setUnits(data.units);
+    };
+
+    const handleCreateCategory = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSaving(true);
-        setError('');
-
         try {
-            const payload = {
-                title,
-                category,
-                platformType,
-                price: parseFloat(price),
-                shortDescription,
-                fullDescription,
-                status,
-                images: [],
-                documents: [],
-            };
-
-            const url = editingId ? `/api/assets/${editingId}` : '/api/assets';
-            const method = editingId ? 'PATCH' : 'POST';
-
-            const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                fetchAssets();
-                setShowForm(false);
-                resetForm();
-            } else {
-                setError(data.error || 'Failed to save asset');
-            }
-        } catch {
-            setError('Something went wrong');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleEdit = async (id: string) => {
-        try {
-            const response = await fetch(`/api/assets/${id}`);
-            const data = await response.json();
-
-            if (response.ok) {
-                const asset = data.asset;
-                setTitle(asset.title);
-                setCategory(asset.category);
-                setPlatformType(asset.platformType);
-                setPrice(asset.price.toString());
-                setShortDescription(asset.shortDescription);
-                setFullDescription(asset.fullDescription || '');
-                setStatus(asset.status);
-                setEditingId(id);
-                setShowForm(true);
-            }
-        } catch (error) {
-            console.error('Failed to fetch asset:', error);
-        }
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this asset?')) return;
-
-        try {
-            const response = await fetch(`/api/assets/${id}`, { method: 'DELETE' });
-            if (response.ok) {
-                fetchAssets();
-            }
-        } catch (error) {
-            console.error('Failed to delete asset:', error);
-        }
-    };
-
-    const handleToggleFeatured = async (id: string, currentFeatured: boolean) => {
-        try {
-            const response = await fetch(`/api/admin/assets/${id}/feature`, {
+            const res = await fetch('/api/admin/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ featured: !currentFeatured }),
+                body: JSON.stringify({ name: newCategoryName })
             });
-
-            if (response.ok) {
-                setAssets(assets.map(a =>
-                    a.id === id ? { ...a, featured: !currentFeatured } : a
-                ));
+            if (res.ok) {
+                setNewCategoryName('');
+                setShowCategoryForm(false);
+                fetchCategories();
+                toast.success('Category created successfully');
+            } else {
+                const data = await res.json();
+                toast.error(data.error || 'Failed to create category');
             }
         } catch (error) {
-            console.error('Failed to toggle featured:', error);
+            toast.error('Network error');
         }
     };
 
-    const categories = ['Web Templates', 'Marketing', 'Business', 'Design', 'Development'];
-    const platforms = ['Next.js', 'React', 'Canva/Figma', 'PDF/Document', 'Video', 'Other'];
+    const handleCreateSubcategory = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedCategoryId) return;
+
+        try {
+            const res = await fetch('/api/admin/subcategories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: newSubTitle,
+                    price: parseFloat(newSubPrice),
+                    publicDescription: newSubDesc,
+                    countries: newSubCountries.split(',').map(s => s.trim()).filter(Boolean),
+                    categoryId: selectedCategoryId
+                })
+            });
+            if (res.ok) {
+                setNewSubTitle('');
+                setNewSubPrice('');
+                setNewSubDesc('');
+                setNewSubCountries('');
+                setShowSubcategoryForm(false);
+                fetchSubcategories(selectedCategoryId);
+                toast.success('Subcategory created successfully');
+            } else {
+                const data = await res.json();
+                toast.error(data.error || 'Failed to create subcategory');
+            }
+        } catch (error) {
+            toast.error('Network error');
+        }
+    };
+
+    const handleAddUnits = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedSubcategoryId) return;
+
+        const unitList = bulkUnits.split('\n').map(u => u.trim()).filter(Boolean);
+        if (unitList.length === 0) return;
+
+        try {
+            const res = await fetch('/api/admin/asset-units', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subcategoryId: selectedSubcategoryId,
+                    units: unitList
+                })
+            });
+            if (res.ok) {
+                setBulkUnits('');
+                setShowUnitForm(false);
+                fetchUnits(selectedSubcategoryId);
+                // Also refresh subcategories to update stock count
+                if (selectedCategoryId) fetchSubcategories(selectedCategoryId);
+                toast.success(`Successfully imported ${unitList.length} units`);
+            } else {
+                const data = await res.json();
+                toast.error(data.error || 'Failed to import units');
+            }
+        } catch (error) {
+            toast.error('Network error');
+        }
+    };
 
     return (
-        <div>
-            <div className="flex items-center justify-between mb-6">
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Assets</h1>
-                    <p className="text-sm text-slate-400 mt-1">Manage digital asset listings</p>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">Inventory Management</h1>
+                    <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">Hierarchy: Category → Subcategory → Unique Units</p>
                 </div>
-                <Button onClick={() => { resetForm(); setShowForm(!showForm); }}>
-                    {showForm ? 'Cancel' : 'Add Asset'}
-                </Button>
             </div>
 
-            {/* Form */}
-            {showForm && (
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle className="text-base">{editingId ? 'Edit Asset' : 'New Asset'}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {error && (
-                                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
-                                    {error}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* STEP 1: Categories */}
+                <div className="lg:col-span-3 space-y-4">
+                    <Card className="border-slate-800/50" hover>
+                        <CardHeader className="flex flex-row items-center justify-between py-3">
+                            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Categories</CardTitle>
+                            <button onClick={() => setShowCategoryForm(!showCategoryForm)} className="text-[10px] text-cyan-400 font-bold hover:underline">+ New</button>
+                        </CardHeader>
+                        <CardContent className="p-2 space-y-1">
+                            {showCategoryForm && (
+                                <form onSubmit={handleCreateCategory} className="mb-4 p-2 bg-slate-900 rounded-xl border border-slate-700/50">
+                                    <Input
+                                        placeholder="Category Name"
+                                        value={newCategoryName}
+                                        onChange={e => setNewCategoryName(e.target.value)}
+                                        className="h-8 text-xs mb-2"
+                                        required
+                                    />
+                                    <div className="flex gap-2">
+                                        <Button type="submit" size="sm" className="h-7 text-[10px] px-3">Save</Button>
+                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] px-3" onClick={() => setShowCategoryForm(false)}>Cancel</Button>
+                                    </div>
+                                </form>
+                            )}
+                            {categories.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setSelectedCategoryId(cat.id)}
+                                    className={`w-full text-left p-3 rounded-xl text-xs transition-all font-bold flex justify-between items-center border ${selectedCategoryId === cat.id ? 'bg-cyan-600 text-white border-cyan-700 shadow-md' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                        }`}
+                                >
+                                    {cat.name}
+                                    <span className={`${selectedCategoryId === cat.id ? 'text-white/70' : 'text-slate-400'} text-[10px]`}>{cat._count.subcategories}</span>
+                                </button>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* STEP 2: Subcategories (Asset Titles) */}
+                <div className="lg:col-span-4 space-y-4">
+                    <Card className={`border-slate-800/50 transition-opacity ${!selectedCategoryId ? 'opacity-50 pointer-events-none' : ''}`} hover>
+                        <CardHeader className="flex flex-row items-center justify-between py-3">
+                            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Subcategories (Titles)</CardTitle>
+                            <button onClick={() => setShowSubcategoryForm(!showSubcategoryForm)} className="text-[10px] text-cyan-400 font-bold hover:underline">+ New Title</button>
+                        </CardHeader>
+                        <CardContent className="p-2 space-y-2">
+                            {showSubcategoryForm && (
+                                <form onSubmit={handleCreateSubcategory} className="mb-4 p-3 bg-slate-900 rounded-xl border border-slate-700/50 space-y-3">
+                                    <Input placeholder="Subcategory Title (e.g. Aged Twitter)" value={newSubTitle} onChange={e => setNewSubTitle(e.target.value)} className="h-8 text-xs" required />
+                                    <Input placeholder="Price (NGN)" type="number" value={newSubPrice} onChange={e => setNewSubPrice(e.target.value)} className="h-8 text-xs" required />
+                                    <textarea placeholder="Public Description" value={newSubDesc} onChange={e => setNewSubDesc(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white outline-none focus:border-cyan-500/50" rows={2} />
+                                    <Input placeholder="Countries (comma separated)" value={newSubCountries} onChange={e => setNewSubCountries(e.target.value)} className="h-8 text-xs" />
+                                    <div className="flex gap-2">
+                                        <Button type="submit" size="sm" className="h-7 text-[10px] px-3">Create</Button>
+                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] px-3" onClick={() => setShowSubcategoryForm(false)}>Cancel</Button>
+                                    </div>
+                                </form>
+                            )}
+                            {subcategories.length === 0 && selectedCategoryId && <p className="text-[10px] text-slate-600 text-center py-4 italic">No subcategories in this category.</p>}
+                            {subcategories.map(sub => (
+                                <div
+                                    key={sub.id}
+                                    onClick={() => setSelectedSubcategoryId(sub.id)}
+                                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${selectedSubcategoryId === sub.id ? 'bg-white border-cyan-500 shadow-lg' : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                                        }`}
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h4 className={`text-sm font-bold ${selectedSubcategoryId === sub.id ? 'text-cyan-700' : 'text-slate-900'}`}>{sub.title}</h4>
+                                        <span className="text-xs font-black text-cyan-600">{formatCurrency(sub.price)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-tight">
+                                        <div className="flex gap-3">
+                                            <span className="text-slate-500">Stock: <span className={sub.stock.available > 0 ? 'text-emerald-600' : 'text-red-600'}>{sub.stock.available}</span></span>
+                                            <span className="text-slate-400">Sold: {sub.stock.sold}</span>
+                                        </div>
+                                    </div>
                                 </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* STEP 3: Asset Units (Locked Details) */}
+                <div className="lg:col-span-5 space-y-4">
+                    <Card className={`border-slate-800/50 transition-all ${!selectedSubcategoryId ? 'opacity-50 pointer-events-none' : ''}`} hover>
+                        <CardHeader className="flex flex-row items-center justify-between py-3">
+                            <div>
+                                <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Asset Units (Inventory)</CardTitle>
+                                {selectedSubcategoryId && <p className="text-[8px] text-slate-500 mt-0.5 font-mono">{subcategories.find(s => s.id === selectedSubcategoryId)?.title}</p>}
+                            </div>
+                            <button onClick={() => setShowUnitForm(!showUnitForm)} className="text-[10px] text-cyan-400 font-bold hover:underline">+ Batch Stock</button>
+                        </CardHeader>
+                        <CardContent className="p-2 space-y-4">
+                            {showUnitForm && (
+                                <form onSubmit={handleAddUnits} className="mb-4 p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-3">
+                                    <p className="text-[9px] text-slate-400 leading-tight">Paste one locked description per line. Each line becomes a unique, sellable asset.</p>
+                                    <textarea
+                                        placeholder="username:password:recovery&#10;username:password:recovery"
+                                        value={bulkUnits}
+                                        onChange={e => setBulkUnits(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-cyan-100 font-mono outline-none focus:border-cyan-500/50"
+                                        rows={8}
+                                        required
+                                    />
+                                    <div className="flex gap-2">
+                                        <Button type="submit" size="sm" className="h-7 text-[10px] px-3">Import Units</Button>
+                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] px-3" onClick={() => setShowUnitForm(false)}>Cancel</Button>
+                                    </div>
+                                </form>
                             )}
 
-                            <div className="grid md:grid-cols-2 gap-4">
-                                <Input
-                                    label="Title"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    required
-                                />
-                                <Input
-                                    label="Price (NGN)"
-                                    type="number"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    min={0}
-                                    required
-                                />
+                            <div className="max-h-[600px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                                {units.length === 0 && selectedSubcategoryId && <p className="text-[10px] text-slate-600 text-center py-10 italic">Inventory is empty. Add units to start selling.</p>}
+                                {units.map(unit => (
+                                    <div key={unit.id} className={`p-4 rounded-xl border-2 ${unit.status === 'SOLD' ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                        <div className="flex justify-between items-center mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full ${unit.status === 'SOLD' ? 'bg-slate-300' : 'bg-emerald-500'}`} />
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${unit.status === 'SOLD' ? 'text-slate-400' : 'text-emerald-600'}`}>
+                                                    {unit.status}
+                                                </span>
+                                            </div>
+                                            <span className="text-[9px] text-slate-400 font-mono font-bold">ID: {unit.id.slice(-8)}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-700 font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-200 break-all">{unit.lockedDescription}</p>
+
+                                        {unit.status === 'SOLD' && unit.purchasedBy && (
+                                            <div className="mt-3 pt-3 border-t border-slate-800/50">
+                                                <div className="flex justify-between items-end">
+                                                    <div>
+                                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tight">Purchased By</p>
+                                                        <p className="text-[10px] text-white font-medium">{unit.purchasedBy.name}</p>
+                                                        <p className="text-[9px] text-slate-500">{unit.purchasedBy.email}</p>
+                                                        {unit.orderId && <p className="text-[8px] text-cyan-500 font-mono mt-1">Order: #{unit.orderId.slice(-6)}</p>}
+                                                    </div>
+                                                    <p className="text-[9px] text-slate-600 italic">{unit.purchasedAt ? formatDate(unit.purchasedAt) : ''}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-
-                            <div className="grid md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Category</label>
-                                    <select
-                                        value={category}
-                                        onChange={(e) => setCategory(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white text-sm"
-                                        required
-                                    >
-                                        <option value="">Select category</option>
-                                        {categories.map((c) => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Platform</label>
-                                    <select
-                                        value={platformType}
-                                        onChange={(e) => setPlatformType(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white text-sm"
-                                        required
-                                    >
-                                        <option value="">Select platform</option>
-                                        {platforms.map((p) => (
-                                            <option key={p} value={p}>{p}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Status</label>
-                                    <select
-                                        value={status}
-                                        onChange={(e) => setStatus(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white text-sm"
-                                    >
-                                        <option value="DRAFT">Draft</option>
-                                        <option value="ACTIVE">Active</option>
-                                        <option value="SOLD">Sold</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Short Description (Public)</label>
-                                <textarea
-                                    value={shortDescription}
-                                    onChange={(e) => setShortDescription(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white min-h-[80px] text-sm"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Description (Locked)</label>
-                                <textarea
-                                    value={fullDescription}
-                                    onChange={(e) => setFullDescription(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white min-h-[120px] text-sm"
-                                    required
-                                />
-                            </div>
-
-                            <Button type="submit" loading={saving}>
-                                {editingId ? 'Update Asset' : 'Create Asset'}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Assets Table */}
-            <Card>
-                <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-slate-700">
-                                    <th className="text-left py-3 px-4 text-slate-400 font-medium text-sm">Title</th>
-                                    <th className="text-left py-3 px-4 text-slate-400 font-medium text-sm">Category</th>
-                                    <th className="text-left py-3 px-4 text-slate-400 font-medium text-sm">Price</th>
-                                    <th className="text-left py-3 px-4 text-slate-400 font-medium text-sm">Status</th>
-                                    <th className="text-left py-3 px-4 text-slate-400 font-medium text-sm">Featured</th>
-                                    <th className="text-right py-3 px-4 text-slate-400 font-medium text-sm">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    [...Array(5)].map((_, i) => (
-                                        <tr key={i} className="border-b border-slate-800">
-                                            <td colSpan={6} className="py-3 px-4">
-                                                <div className="h-6 bg-slate-700 rounded animate-pulse" />
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : assets.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-center py-8 text-slate-400 text-sm">
-                                            No assets yet. Create your first one!
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    assets.map((asset) => (
-                                        <tr key={asset.id} className="border-b border-slate-800 hover:bg-slate-800/30">
-                                            <td className="py-3 px-4">
-                                                <p className="text-white font-medium text-sm">{asset.title}</p>
-                                                <p className="text-xs text-slate-400">{asset.platformType}</p>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <Badge>{asset.category}</Badge>
-                                            </td>
-                                            <td className="py-3 px-4 text-white text-sm">
-                                                {formatCurrency(asset.price)}
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <StatusBadge status={asset.status} type="asset" />
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <button
-                                                    onClick={() => handleToggleFeatured(asset.id, asset.featured)}
-                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${asset.featured
-                                                            ? 'bg-amber-500/20 text-amber-400'
-                                                            : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
-                                                        }`}
-                                                    title={asset.featured ? 'Remove from featured' : 'Add to featured'}
-                                                >
-                                                    <svg className="w-4 h-4" fill={asset.featured ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                                    </svg>
-                                                </button>
-                                            </td>
-                                            <td className="py-3 px-4 text-right">
-                                                <Button variant="ghost" size="sm" onClick={() => handleEdit(asset.id)}>
-                                                    Edit
-                                                </Button>
-                                                <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={() => handleDelete(asset.id)}>
-                                                    Delete
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }

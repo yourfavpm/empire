@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 
-// POST /api/admin/assets/[id]/feature - Toggle featured status
+// POST /api/admin/assets/[id]/feature - Toggle featured status for subcategory
 export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -18,32 +18,41 @@ export async function POST(
         const body = await req.json();
         const { featured, featuredOrder } = body;
 
-        // Verify asset exists
-        const existingAsset = await prisma.asset.findUnique({
-            where: { id },
-        });
+        // Verify subcategory exists
+        const { data: existingSub, error: fetchError } = await supabaseAdmin
+            .from('Subcategory')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-        if (!existingAsset) {
-            return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
+        if (fetchError || !existingSub) {
+            return NextResponse.json({ error: 'Subcategory not found' }, { status: 404 });
         }
 
         // Update featured status
-        const updatedAsset = await prisma.asset.update({
-            where: { id },
-            data: {
-                featured: featured ?? existingAsset.featured,
-                featuredOrder: featuredOrder ?? existingAsset.featuredOrder,
-            },
-        });
+        const { data: updatedSub, error: updateError } = await supabaseAdmin
+            .from('Subcategory')
+            .update({
+                featured: featured ?? existingSub.featured,
+                featuredOrder: featuredOrder ?? existingSub.featuredOrder,
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (updateError) {
+            console.error('Toggle feature error:', updateError);
+            throw updateError;
+        }
 
         return NextResponse.json({
-            message: featured ? 'Asset featured' : 'Asset unfeatured',
-            asset: updatedAsset,
+            message: featured ? 'Subcategory featured' : 'Subcategory unfeatured',
+            subcategory: updatedSub,
         });
     } catch (error) {
         console.error('Toggle feature error:', error);
         return NextResponse.json(
-            { error: 'Failed to update asset' },
+            { error: 'Failed to update subcategory' },
             { status: 500 }
         );
     }

@@ -9,11 +9,9 @@ interface Asset {
     id: string;
     title: string;
     category: string;
-    platformType: string;
-    price: string | number;
+    price: number;
     shortDescription: string;
-    country?: string;
-    stock?: number;
+    availableStock: number;
 }
 
 interface CategoryData {
@@ -56,15 +54,15 @@ export function CategorySection({ categories }: CategorySectionProps) {
                             key={category}
                             onClick={() => toggleCategory(category)}
                             className={`group relative text-left p-5 rounded-xl border transition-all duration-200 ${expandedCategory === category
-                                    ? 'bg-cyan-500/10 border-cyan-500/50 scale-[1.02]'
-                                    : 'bg-slate-800/50 border-slate-700/50 hover:border-cyan-500/30 hover:bg-slate-800/80'
+                                ? 'bg-cyan-500/10 border-cyan-500/50 scale-[1.02]'
+                                : 'bg-slate-800/50 border-slate-700/50 hover:border-cyan-500/30 hover:bg-slate-800/80'
                                 }`}
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${expandedCategory === category
-                                            ? 'bg-cyan-500/30'
-                                            : 'bg-cyan-500/20'
+                                        ? 'bg-cyan-500/30'
+                                        : 'bg-cyan-500/20'
                                         }`}>
                                         <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -72,7 +70,7 @@ export function CategorySection({ categories }: CategorySectionProps) {
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-white text-sm">{category}</h3>
-                                        <p className="text-xs text-slate-400">{count} asset{count !== 1 ? 's' : ''}</p>
+                                        <p className="text-xs text-slate-400">{count} item{count !== 1 ? 's' : ''}</p>
                                     </div>
                                 </div>
                                 <svg
@@ -126,24 +124,20 @@ export function CategorySection({ categories }: CategorySectionProps) {
                                         <div className="space-y-2 mb-4 text-sm">
                                             <div className="flex justify-between">
                                                 <span className="text-slate-500">Price</span>
-                                                <span className="text-white font-semibold">{formatCurrency(Number(asset.price))}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Country</span>
-                                                <span className="text-slate-300">{asset.country || 'Nigeria'}</span>
+                                                <span className="text-white font-semibold">{formatCurrency(asset.price)}</span>
                                             </div>
                                             <div className="flex justify-between">
                                                 <span className="text-slate-500">In Stock</span>
-                                                <span className={`font-medium ${(asset.stock ?? 1) > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {asset.stock ?? 1} available
+                                                <span className={`font-medium ${asset.availableStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {asset.availableStock} available
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* Buy Now Button */}
                                         <Link href={`/assets/${asset.id}`}>
-                                            <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white">
-                                                Buy Now
+                                            <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white disabled:bg-slate-800 disabled:text-slate-600" disabled={asset.availableStock === 0}>
+                                                {asset.availableStock > 0 ? 'Buy Now' : 'Sold Out'}
                                             </Button>
                                         </Link>
                                     </div>

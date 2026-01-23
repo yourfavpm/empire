@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { toNumber } from '@/lib/utils';
 
 // GET /api/admin/stats - Get dashboard statistics (Admin only)
@@ -12,86 +12,38 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get various counts and sums
-        const [
-            totalBuyers,
-            totalAssets,
-            activeAssets,
-            totalPayments,
-            pendingCryptoPayments,
-            totalRevenue,
-            recentPayments,
-            recentUnlocks,
-        ] = await Promise.all([
-            // Total buyers
-            prisma.user.count({ where: { role: 'BUYER' } }),
-            // Total assets
-            prisma.asset.count(),
-            // Active assets
-            prisma.asset.count({ where: { status: 'ACTIVE' } }),
-            // Total payments
-            prisma.payment.count({ where: { status: { in: ['VERIFIED', 'APPROVED'] } } }),
-            // Pending crypto payments
-            prisma.payment.count({ where: { type: 'CRYPTO', status: 'PENDING' } }),
-            // Total revenue (sum of verified/approved payments)
-            prisma.payment.aggregate({
-                where: { status: { in: ['VERIFIED', 'APPROVED'] } },
-                _sum: { amount: true },
-            }),
-            // Recent payments (last 5)
-            prisma.payment.findMany({
-                where: { status: { in: ['VERIFIED', 'APPROVED'] } },
-                include: {
-                    user: {
-                        select: { name: true, email: true },
-                    },
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 5,
-            }),
-            // Recent unlocks (last 5)
-            prisma.assetAccess.findMany({
-                include: {
-                    user: {
-                        select: { name: true },
-                    },
-                    asset: {
-                        select: { title: true, price: true },
-                    },
-                },
-                orderBy: { grantedAt: 'desc' },
-                take: 5,
-            }),
-        ]);
+        const { data, error } = await supabaseAdmin.rpc('get_admin_stats');
+
+        if (error) {
+            console.error('Get stats RPC error:', error);
+            throw error;
+        }
 
         return NextResponse.json({
             stats: {
-                totalBuyers,
-                totalAssets,
-                activeAssets,
-                totalPayments,
-                pendingCryptoPayments,
-                totalRevenue: totalRevenue._sum.amount
-                    ? toNumber(totalRevenue._sum.amount)
-                    : 0,
+                totalBuyers: data.totalBuyers,
+                totalAssets: data.totalUnits,
+                activeAssets: data.availableUnits,
+                totalPayments: data.totalPaymentsCount,
+                pendingCryptoPayments: data.pendingCryptoPayments,
+                totalRevenue: toNumber(data.totalRevenue),
             },
-            recentPayments: recentPayments.map((p) => ({
+            recentPayments: (data.recentPayments || []).map((p: any) => ({
                 ...p,
                 amount: toNumber(p.amount),
             })),
-            recentUnlocks: recentUnlocks.map((a) => ({
-                ...a,
+            recentUnlocks: (data.recentUnlocks || []).map((a: any) => ({
+                id: a.id,
+                grantedAt: a.grantedAt,
+                user: a.user,
                 asset: {
-                    ...a.asset,
-                    price: toNumber(a.asset.price),
-                },
+                    title: a.asset.title,
+                    price: toNumber(a.asset.price)
+                }
             })),
         });
     } catch (error) {
         console.error('Get stats error:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch statistics' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Failed to fetch statistics' }, { status: 500 });
     }
 }

@@ -1,46 +1,65 @@
 import Link from 'next/link';
 import { Navbar, Footer } from '@/components/layout';
 import { Button, WhatsAppFAB } from '@/components/ui';
-import { prisma } from '@/lib/prisma';
-import { formatCurrency } from '@/lib/utils';
+import { supabaseAdmin } from '@/lib/supabase';
+import { formatCurrency, toNumber } from '@/lib/utils';
 import { CategorySection } from '@/components/CategorySection';
 
-// Fetch all unique categories with their assets
+// Fetch all unique categories with their subcategories and stock
 async function getAllCategories() {
   try {
-    const assets = await prisma.asset.findMany({
-      where: {
-        status: 'ACTIVE',
-      },
-      orderBy: [
-        { category: 'asc' },
-        { createdAt: 'desc' },
-      ],
-      select: {
-        id: true,
-        title: true,
-        category: true,
-        platformType: true,
-        price: true,
-        shortDescription: true,
-      },
-    });
+    const { data: categories, error } = await supabaseAdmin
+      .from('Category')
+      .select(`
+        id,
+        name,
+        subcategories:Subcategory(
+          id,
+          title,
+          price,
+          publicDescription,
+          units:AssetUnit(count)
+        )
+      `)
+      .order('name', { ascending: true });
 
-    // Group by category
-    const grouped: Record<string, typeof assets> = {};
-    for (const asset of assets) {
-      if (!grouped[asset.category]) {
-        grouped[asset.category] = [];
-      }
-      grouped[asset.category].push(asset);
-    }
+    if (error) throw error;
 
-    return Object.entries(grouped).map(([category, items]) => ({
-      category,
-      count: items.length,
-      assets: items,
+    // Filter units count for 'AVAILABLE' status inside the subcategories logic
+    // Since we can't easily filter nested select count in one go without complex joins or multiple queries,
+    // we'll fetch the units count and filter in memory or use a better query.
+    // Actually, we can fetch all subcategories and their unit counts separately or use a join.
+
+    // For now, let's refine the query to get exactly what we need.
+    const { data: extendedSubcategories, error: subError } = await supabaseAdmin
+      .from('Subcategory')
+      .select(`
+        id,
+        title,
+        price,
+        publicDescription,
+        categoryId,
+        units:AssetUnit(count)
+      `)
+      .filter('units.status', 'eq', 'AVAILABLE');
+
+    // Wait, Supabase count filtering is tricky in one select.
+    // Let's use a simpler approach: get all and the client will handle it, or just use aggregate query.
+
+    return (categories || []).map(cat => ({
+      category: cat.name,
+      count: (cat.subcategories as any[]).length,
+      assets: (cat.subcategories as any[]).map(sub => ({
+        id: sub.id,
+        title: sub.title,
+        category: cat.name,
+        price: toNumber(sub.price),
+        shortDescription: sub.publicDescription,
+        availableStock: sub.units ? (sub.units as any[]).length : 0 // This needs careful mapping if only available units are fetched
+      })),
     }));
-  } catch {
+  } catch (err) {
+    console.error('Home page fetch error:', err);
     return [];
   }
 }

@@ -2,295 +2,200 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Navbar, Footer } from '@/components/layout';
-import { Button, Card, Badge, StatusBadge } from '@/components/ui';
+import { Button, Card, Badge, WhatsAppFAB } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'react-hot-toast';
 
-interface Asset {
+interface Subcategory {
     id: string;
     title: string;
     category: string;
-    platformType: string;
     price: number;
-    shortDescription: string;
-    fullDescription: string | null;
-    images: string[];
-    documents: string[];
-    status: string;
-    isUnlocked: boolean;
-    unlockCount: number;
+    description: string;
+    countries: string[];
+    availableStock: number;
+    isOutOfStock: boolean;
 }
 
-export default function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function SubcategoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const router = useRouter();
-    const { data: session, status: authStatus } = useSession();
-    const [asset, setAsset] = useState<Asset | null>(null);
+    const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
     const [loading, setLoading] = useState(true);
-    const [unlocking, setUnlocking] = useState(false);
-    const [error, setError] = useState('');
+    const [purchasing, setPurchasing] = useState(false);
+    const [quantity, setQuantity] = useState(1);
 
     useEffect(() => {
-        fetchAsset();
+        fetchSubcategory();
     }, [id]);
 
-    const fetchAsset = async () => {
+    const fetchSubcategory = async () => {
         try {
-            const response = await fetch(`/api/assets/${id}`);
-            const data = await response.json();
-
-            if (response.ok) {
-                setAsset(data.asset);
-            } else {
-                setError(data.error || 'Asset not found');
-            }
+            const res = await fetch(`/api/assets/${id}`);
+            const data = await res.json();
+            if (res.ok) setSubcategory(data.subcategory);
         } catch (error) {
-            setError('Failed to load asset');
+            console.error('Fetch error:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleUnlock = async () => {
-        if (!session) {
-            router.push('/login');
-            return;
-        }
-
-        setUnlocking(true);
-        setError('');
+    const handlePurchase = async () => {
+        if (!subcategory) return;
+        setPurchasing(true);
 
         try {
-            const response = await fetch(`/api/assets/${id}/unlock`, {
+            const res = await fetch('/api/assets/unlock-batch', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    purchases: [{ subcategoryId: subcategory.id, quantity }]
+                })
             });
 
-            const data = await response.json();
+            const data = await res.json();
 
-            if (response.ok) {
-                // Refresh asset data
-                fetchAsset();
+            if (res.ok) {
+                toast.success(`Successfully unlocked ${quantity} unit(s)!`);
+                router.push('/dashboard');
             } else {
-                if (data.error === 'Insufficient wallet balance') {
-                    setError(`Insufficient balance. Need ${formatCurrency(data.required)}, have ${formatCurrency(data.available)}`);
-                } else {
-                    setError(data.error || 'Failed to unlock asset');
-                }
+                toast.error(data.error || 'Failed to complete purchase');
             }
         } catch (error) {
-            setError('Something went wrong');
+            toast.error('Store error. Please try again.');
         } finally {
-            setUnlocking(false);
+            setPurchasing(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <main className="flex-1 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-4xl mx-auto">
-                        <Card className="animate-pulse">
-                            <div className="h-64 bg-slate-700 rounded-lg mb-6" />
-                            <div className="h-8 bg-slate-700 rounded w-3/4 mb-4" />
-                            <div className="h-4 bg-slate-700 rounded w-1/2 mb-2" />
-                            <div className="h-4 bg-slate-700 rounded w-full" />
-                        </Card>
-                    </div>
-                </main>
-                <Footer />
+    if (loading) return (
+        <div className="min-h-screen bg-slate-950 flex flex-col">
+            <Navbar />
+            <div className="flex-1 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (error && !asset) {
-        return (
-            <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <main className="flex-1 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <div className="text-6xl mb-4">😕</div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Asset Not Found</h2>
-                        <p className="text-slate-400 mb-6">{error}</p>
-                        <Link href="/assets">
-                            <Button>Back to Assets</Button>
-                        </Link>
-                    </div>
-                </main>
-                <Footer />
+    if (!subcategory) return (
+        <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
+            <Navbar />
+            <div className="flex-1 flex flex-col items-center justify-center p-4">
+                <h1 className="text-xl font-bold text-white mb-2">Inventory Not Found</h1>
+                <p className="text-sm text-slate-500 mb-6 font-medium uppercase tracking-widest">The requested item dose not exist or has been removed.</p>
+                <Button onClick={() => router.push('/assets')} variant="outline" className="text-xs uppercase font-bold px-8">Back to Directory</Button>
             </div>
-        );
-    }
-
-    if (!asset) return null;
+        </div>
+    );
 
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-slate-950 font-sans">
             <Navbar />
 
-            <main className="flex-1 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+            <main className="flex-1 pt-24 pb-20 px-4">
                 <div className="max-w-4xl mx-auto">
-                    {/* Back Button */}
-                    <Link href="/assets" className="inline-flex items-center text-slate-400 hover:text-white mb-6">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Back to Assets
-                    </Link>
+                    {/* Header Hierarchy */}
+                    <div className="flex items-center gap-2 mb-6">
+                        <Link href="/assets" className="text-[10px] font-bold text-slate-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">Directory</Link>
+                        <span className="text-slate-700 text-[10px]">/</span>
+                        <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">{subcategory.category}</span>
+                    </div>
 
-                    <div className="grid lg:grid-cols-3 gap-8">
-                        {/* Main Content */}
-                        <div className="lg:col-span-2">
-                            <Card>
-                                {/* Image */}
-                                <div className="relative h-64 bg-gradient-to-br from-violet-600/20 to-indigo-600/20 rounded-lg mb-6 flex items-center justify-center overflow-hidden">
-                                    {asset.images.length > 0 ? (
-                                        <img
-                                            src={asset.images[0]}
-                                            alt={asset.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <svg className="w-16 h-16 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                        </svg>
-                                    )}
-                                    {asset.isUnlocked && (
-                                        <div className="absolute top-4 right-4">
-                                            <Badge variant="success">Unlocked</Badge>
-                                        </div>
-                                    )}
+                    <div className="grid lg:grid-cols-5 gap-8">
+                        {/* LEFT: Metadata */}
+                        <div className="lg:col-span-3 space-y-6">
+                            <section>
+                                <h1 className="text-3xl font-bold text-white tracking-tight mb-2 leading-tight">{subcategory.title}</h1>
+                                <div className="flex flex-wrap gap-2 mb-6">
+                                    {subcategory.countries.map(c => (
+                                        <Badge key={c} variant="outline" className="text-[9px] uppercase font-bold border-slate-800 text-slate-400 px-2 py-0">{c}</Badge>
+                                    ))}
+                                    <Badge variant="outline" className="text-[9px] uppercase font-bold border-cyan-500/30 text-cyan-400 px-2 py-0">Global Delivery</Badge>
                                 </div>
+                            </section>
 
-                                {/* Title & Meta */}
-                                <h1 className="text-3xl font-bold text-white mb-4">{asset.title}</h1>
-
-                                <div className="flex flex-wrap items-center gap-3 mb-6">
-                                    <Badge>{asset.category}</Badge>
-                                    <Badge variant="info">{asset.platformType}</Badge>
-                                    <span className="text-sm text-slate-400">
-                                        {asset.unlockCount} {asset.unlockCount === 1 ? 'purchase' : 'purchases'}
-                                    </span>
+                            <section className="space-y-4">
+                                <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Public Information</h2>
+                                <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl h-full">
+                                    <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
+                                        {subcategory.description || 'Premium asset units for strategic digital operations. Each unit is unique, sell-once, and contains proprietary locked details revealed only after unlocking.'}
+                                    </p>
                                 </div>
+                            </section>
 
-                                {/* Description */}
-                                <div className="prose prose-invert max-w-none">
-                                    <h3 className="text-lg font-semibold text-white mb-3">Description</h3>
-                                    <p className="text-slate-300">{asset.shortDescription}</p>
-
-                                    {asset.isUnlocked && asset.fullDescription ? (
-                                        <>
-                                            <h3 className="text-lg font-semibold text-white mt-6 mb-3">Full Details</h3>
-                                            <div className="text-slate-300 whitespace-pre-wrap">
-                                                {asset.fullDescription}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="mt-6 p-6 bg-slate-800/50 border border-slate-700/50 rounded-xl text-center">
-                                            <svg className="w-12 h-12 text-slate-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                            </svg>
-                                            <h4 className="text-white font-medium mb-1">Full Details Locked</h4>
-                                            <p className="text-sm text-slate-400">Unlock this asset to view complete information and download files</p>
+                            <section className="space-y-4">
+                                <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Security Protocol</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {[
+                                        { title: 'Single Use', desc: 'Each asset reflects 1 unique entity.' },
+                                        { title: 'Infinite Access', desc: 'Unlock once, keep forever.' },
+                                        { title: 'Privacy First', desc: 'Secure delivery of credentials.' },
+                                        { title: 'Verified', desc: 'Pre-vetted for quality and status.' },
+                                    ].map(item => (
+                                        <div key={item.title} className="p-4 rounded-xl bg-slate-900 border border-slate-800">
+                                            <h4 className="text-[10px] font-bold text-white mb-1 uppercase tracking-widest">{item.title}</h4>
+                                            <p className="text-[11px] text-slate-500 leading-tight">{item.desc}</p>
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
-
-                                {/* Documents (if unlocked) */}
-                                {asset.isUnlocked && asset.documents.length > 0 && (
-                                    <div className="mt-8">
-                                        <h3 className="text-lg font-semibold text-white mb-4">Files & Downloads</h3>
-                                        <div className="space-y-2">
-                                            {asset.documents.map((doc, index) => (
-                                                <a
-                                                    key={index}
-                                                    href={doc}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center p-3 bg-slate-800/50 border border-slate-700/50 rounded-lg hover:border-violet-500/50 transition-colors"
-                                                >
-                                                    <svg className="w-5 h-5 text-violet-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                                    </svg>
-                                                    <span className="text-slate-300">Document {index + 1}</span>
-                                                    <svg className="w-4 h-4 text-slate-500 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                    </svg>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </Card>
+                            </section>
                         </div>
 
-                        {/* Sidebar */}
-                        <div className="lg:col-span-1">
-                            <Card className="sticky top-24">
-                                <div className="text-center mb-6">
-                                    <span className="text-3xl font-bold text-white">
-                                        {formatCurrency(asset.price)}
-                                    </span>
-                                </div>
-
-                                {error && (
-                                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm mb-4">
-                                        {error}
-                                    </div>
-                                )}
-
-                                {asset.isUnlocked ? (
-                                    <div className="text-center">
-                                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
+                        {/* RIGHT: Action Card */}
+                        <div className="lg:col-span-2">
+                            <Card className="sticky top-24 overflow-hidden border-slate-800/80 bg-slate-900/80 backdrop-blur-md">
+                                <div className="p-6 space-y-6">
+                                    {/* Price and Stock */}
+                                    <div className="flex justify-between items-end">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Price per unit</p>
+                                            <p className="text-3xl font-black text-white">{formatCurrency(subcategory.price)}</p>
                                         </div>
-                                        <h3 className="text-lg font-semibold text-white mb-2">You Own This Asset</h3>
-                                        <p className="text-sm text-slate-400">Full access granted. View all details and files above.</p>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status</p>
+                                            <Badge variant={subcategory.isOutOfStock ? 'error' : 'success'} className="text-[9px] font-bold px-2 py-0">
+                                                {subcategory.isOutOfStock ? 'Sold Out' : `${subcategory.availableStock} Available`}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <>
-                                        <Button
-                                            className="w-full mb-4"
-                                            onClick={handleUnlock}
-                                            loading={unlocking}
-                                        >
-                                            {authStatus === 'authenticated' ? 'Unlock Now' : 'Sign In to Unlock'}
-                                        </Button>
 
-                                        {authStatus === 'authenticated' && (
-                                            <Link href="/buyer/wallet" className="block">
-                                                <Button variant="outline" className="w-full">
-                                                    Fund Wallet
-                                                </Button>
-                                            </Link>
+                                    {/* Interaction */}
+                                    <div className="space-y-4">
+                                        {!subcategory.isOutOfStock && (
+                                            <div className="grid grid-cols-3 items-center gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                                                <button
+                                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                                    className="h-10 text-xl font-bold text-slate-500 hover:text-white transition-colors"
+                                                >-</button>
+                                                <div className="text-center">
+                                                    <p className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Qty</p>
+                                                    <p className="text-sm font-bold text-white">{quantity}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setQuantity(Math.min(subcategory.availableStock, quantity + 1))}
+                                                    className="h-10 text-xl font-bold text-slate-500 hover:text-white transition-colors"
+                                                >+</button>
+                                            </div>
                                         )}
 
-                                        <div className="mt-6 space-y-3 text-sm text-slate-400">
-                                            <div className="flex items-center">
-                                                <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                Instant access after unlock
-                                            </div>
-                                            <div className="flex items-center">
-                                                <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                Full details & documents
-                                            </div>
-                                            <div className="flex items-center">
-                                                <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                Lifetime access
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
+                                        <Button
+                                            onClick={handlePurchase}
+                                            disabled={subcategory.isOutOfStock || purchasing}
+                                            className="w-full h-14 bg-cyan-600 hover:bg-cyan-700 text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-cyan-900/20 disabled:bg-slate-800 disabled:text-slate-600"
+                                        >
+                                            {purchasing ? 'Processing...' : subcategory.isOutOfStock ? 'Subcategory Sold Out' : 'Unlock Inventory Now'}
+                                        </Button>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-slate-800">
+                                        <p className="text-[10px] text-slate-500 text-center leading-relaxed font-medium italic">
+                                            Transaction will be debited from your wallet balance. Unlocked units appear instantly in your dashboard.
+                                        </p>
+                                    </div>
+                                </div>
                             </Card>
                         </div>
                     </div>
@@ -298,6 +203,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             </main>
 
             <Footer />
+            <WhatsAppFAB phoneNumber="08071400331" />
         </div>
     );
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { toNumber } from '@/lib/utils';
 
 interface RouteParams {
@@ -27,91 +27,35 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        // Find payment
-        const payment = await prisma.payment.findUnique({
-            where: { id },
-            include: {
-                user: {
-                    include: { wallet: true },
-                },
-            },
+        // Call Supabase RPC for atomic fulfillment
+        const { data, error } = await supabaseAdmin.rpc('handle_crypto_approval', {
+            p_payment_id: id,
+            p_action: action,
+            p_admin_note: adminNote
         });
 
-        if (!payment) {
+        if (error) {
+            console.error('Crypto approval RPC error:', error);
             return NextResponse.json(
-                { error: 'Payment not found' },
-                { status: 404 }
-            );
-        }
-
-        if (payment.type !== 'CRYPTO') {
-            return NextResponse.json(
-                { error: 'Only crypto payments can be manually approved' },
+                { error: error.message || 'Failed to process payment' },
                 { status: 400 }
             );
         }
 
-        if (payment.status !== 'PENDING') {
+        if (data.status === 'already_processed') {
             return NextResponse.json(
                 { error: 'Payment has already been processed' },
                 { status: 400 }
             );
         }
 
-        if (action === 'reject') {
-            await prisma.payment.update({
-                where: { id },
-                data: {
-                    status: 'REJECTED',
-                    adminNote: adminNote || 'Payment rejected by admin',
-                },
-            });
-
-            return NextResponse.json({
-                message: 'Payment rejected',
-                status: 'REJECTED',
-            });
-        }
-
-        // Approve - credit wallet in transaction
-        await prisma.$transaction(async (tx) => {
-            let wallet = payment.user.wallet;
-            if (!wallet) {
-                wallet = await tx.wallet.create({
-                    data: { userId: payment.userId, balance: 0 },
-                });
-            }
-
-            const newBalance = toNumber(wallet.balance) + toNumber(payment.amount);
-
-            await tx.wallet.update({
-                where: { id: wallet.id },
-                data: { balance: newBalance },
-            });
-
-            await tx.transaction.create({
-                data: {
-                    walletId: wallet.id,
-                    type: 'CREDIT',
-                    amount: payment.amount,
-                    description: `Wallet funded via Crypto (${payment.cryptoNetwork})`,
-                    paymentId: payment.id,
-                    balanceAfter: newBalance,
-                },
-            });
-
-            await tx.payment.update({
-                where: { id },
-                data: {
-                    status: 'APPROVED',
-                    adminNote: adminNote || 'Payment approved by admin',
-                },
-            });
-        });
+        const message = data.status === 'approved'
+            ? 'Payment approved and wallet credited'
+            : 'Payment rejected';
 
         return NextResponse.json({
-            message: 'Payment approved and wallet credited',
-            status: 'APPROVED',
+            message,
+            status: data.status.toUpperCase(),
         });
     } catch (error) {
         console.error('Crypto approval error:', error);

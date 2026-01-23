@@ -45,8 +45,8 @@ export default function AdminDashboard() {
             const data = await response.json();
             if (response.ok) {
                 setStats(data.stats);
-                setRecentPayments(data.recentPayments);
-                setRecentUnlocks(data.recentUnlocks);
+                setRecentPayments(data.recentPayments || []);
+                setRecentUnlocks(data.recentUnlocks || []);
             }
         } catch (error) {
             console.error('Failed to fetch stats:', error);
@@ -56,36 +56,37 @@ export default function AdminDashboard() {
     };
 
     const statCards = [
-        { label: 'Total Revenue', value: formatCurrency(stats?.totalRevenue || 0), icon: '💰', color: 'cyan' },
-        { label: 'Total Buyers', value: stats?.totalBuyers || 0, icon: '👥', color: 'blue' },
-        { label: 'Active Assets', value: stats?.activeAssets || 0, icon: '📦', color: 'emerald' },
-        { label: 'Pending Crypto', value: stats?.pendingCryptoPayments || 0, icon: '⏳', color: 'amber', link: '/admin/payments?status=PENDING' },
+        { label: 'Total Revenue', value: formatCurrency(stats?.totalRevenue || 0), icon: '💰', color: 'text-cyan-400' },
+        { label: 'Total Buyers', value: stats?.totalBuyers || 0, icon: '👥', color: 'text-blue-400' },
+        { label: 'Active Assets', value: stats?.activeAssets || 0, icon: '📦', color: 'text-emerald-400' },
+        { label: 'Pending Crypto', value: stats?.pendingCryptoPayments || 0, icon: '⏳', color: 'text-amber-400', link: '/admin/payments?status=PENDING' },
     ];
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-                <p className="text-slate-400 mt-1">Overview of your marketplace</p>
+        <div className="space-y-8">
+            <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight">System Overview</h1>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest">Real-time marketplace analytics</p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {statCards.map((stat, index) => (
-                    <Card key={index} gradient>
-                        <CardContent className="py-6">
-                            <div className="flex items-center justify-between">
+                    <Card key={index} className="border-slate-200">
+                        <CardContent className="py-4">
+                            <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-slate-400 text-sm">{stat.label}</p>
-                                    <p className="text-3xl font-bold text-white mt-1">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
+                                    <p className="text-2xl font-black text-slate-900 tracking-tight">
                                         {loading ? '...' : stat.value}
                                     </p>
                                 </div>
-                                <div className="text-4xl">{stat.icon}</div>
+                                <span className="text-2xl">{stat.icon}</span>
                             </div>
                             {stat.link && stats?.pendingCryptoPayments ? (
-                                <Link href={stat.link} className="text-sm text-cyan-400 hover:underline mt-2 inline-block">
-                                    Review pending →
+                                <Link href={stat.link} className="flex items-center gap-1 text-[10px] text-amber-600 hover:text-amber-700 mt-3 font-black uppercase tracking-widest transition-colors">
+                                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                                    Action Required
                                 </Link>
                             ) : null}
                         </CardContent>
@@ -94,12 +95,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* Recent Activity */}
-            <div className="grid lg:grid-cols-2 gap-8">
+            <div className="grid lg:grid-cols-2 gap-6">
                 {/* Recent Payments */}
-                <Card>
+                <Card className="border-slate-800/50">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Recent Payments</CardTitle>
-                        <Link href="/admin/payments" className="text-sm text-cyan-400 hover:underline">
+                        <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">Recent Payments</CardTitle>
+                        <Link href="/admin/payments" className="text-[10px] text-cyan-400 hover:underline font-bold">
                             View all
                         </Link>
                     </CardHeader>
@@ -107,26 +108,28 @@ export default function AdminDashboard() {
                         {loading ? (
                             <div className="space-y-4">
                                 {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="animate-pulse h-12 bg-slate-700 rounded" />
+                                    <div key={i} className="animate-pulse h-10 bg-slate-800 rounded-xl" />
                                 ))}
                             </div>
-                        ) : recentPayments.length === 0 ? (
-                            <p className="text-slate-400 text-center py-8">No payments yet</p>
+                        ) : (recentPayments || []).length === 0 ? (
+                            <p className="text-xs text-slate-600 text-center py-8 italic font-light">No transaction history</p>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {recentPayments.map((payment) => (
-                                    <div key={payment.id} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
+                                    <div key={payment.id} className="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0 group">
                                         <div>
-                                            <p className="text-white">{payment.user.name}</p>
-                                            <p className="text-sm text-slate-400">{formatDate(payment.createdAt)}</p>
+                                            <p className="text-xs font-medium text-white group-hover:text-cyan-400 transition-colors uppercase">{payment.user?.name || 'Unknown'}</p>
+                                            <p className="text-[10px] text-slate-500 font-mono tracking-tighter">{formatDate(payment.createdAt)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-semibold text-emerald-400">
+                                            <p className="text-xs font-bold text-emerald-400">
                                                 {formatCurrency(payment.amount)}
                                             </p>
-                                            <Badge variant={payment.type === 'PAYSTACK' ? 'success' : 'warning'}>
-                                                {payment.type}
-                                            </Badge>
+                                            <div className="mt-1">
+                                                <Badge variant={payment.type === 'PAYSTACK' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0">
+                                                    {payment.type}
+                                                </Badge>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -136,35 +139,35 @@ export default function AdminDashboard() {
                 </Card>
 
                 {/* Recent Unlocks */}
-                <Card>
+                <Card className="border-slate-800/50">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Recent Unlocks</CardTitle>
-                        <Link href="/admin/users" className="text-sm text-cyan-400 hover:underline">
-                            View users
+                        <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">Latest Unlocks</CardTitle>
+                        <Link href="/admin/users" className="text-[10px] text-cyan-400 hover:underline font-bold">
+                            Manage Users
                         </Link>
                     </CardHeader>
                     <CardContent>
                         {loading ? (
                             <div className="space-y-4">
                                 {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="animate-pulse h-12 bg-slate-700 rounded" />
+                                    <div key={i} className="animate-pulse h-10 bg-slate-800 rounded-xl" />
                                 ))}
                             </div>
-                        ) : recentUnlocks.length === 0 ? (
-                            <p className="text-slate-400 text-center py-8">No unlocks yet</p>
+                        ) : (recentUnlocks || []).length === 0 ? (
+                            <p className="text-xs text-slate-600 text-center py-8 italic font-light">No recent activity</p>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {recentUnlocks.map((unlock, index) => (
-                                    <div key={index} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
-                                        <div>
-                                            <p className="text-white">{unlock.asset.title}</p>
-                                            <p className="text-sm text-slate-400">by {unlock.user.name}</p>
+                                    <div key={index} className="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0 group">
+                                        <div className="max-w-[180px]">
+                                            <p className="text-xs font-medium text-white group-hover:text-cyan-400 transition-colors truncate uppercase">{unlock.asset.title}</p>
+                                            <p className="text-[10px] text-slate-500">Buyer: {unlock.user.name}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-semibold text-cyan-400">
+                                            <p className="text-xs font-bold text-cyan-400">
                                                 {formatCurrency(unlock.asset.price)}
                                             </p>
-                                            <p className="text-xs text-slate-400">{formatDate(unlock.grantedAt)}</p>
+                                            <p className="text-[10px] text-slate-500 font-mono tracking-tighter mt-1">{formatDate(unlock.grantedAt)}</p>
                                         </div>
                                     </div>
                                 ))}

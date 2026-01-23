@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { generatePaymentReference } from '@/lib/utils';
 
 // POST /api/payments/crypto/submit - Submit crypto payment for approval
@@ -46,9 +46,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Check for duplicate TXID
-        const existingPayment = await prisma.payment.findFirst({
-            where: { cryptoTxId: cryptoTxId.trim() },
-        });
+        const { data: existingPayment, error: fetchError } = await supabaseAdmin
+            .from('Payment')
+            .select('id')
+            .eq('cryptoTxId', cryptoTxId.trim())
+            .maybeSingle();
 
         if (existingPayment) {
             return NextResponse.json(
@@ -69,8 +71,9 @@ export async function POST(request: NextRequest) {
         };
 
         // Create pending payment
-        const payment = await prisma.payment.create({
-            data: {
+        const { data: payment, error: createError } = await supabaseAdmin
+            .from('Payment')
+            .insert({
                 userId: session.user.id,
                 amount,
                 type: 'CRYPTO',
@@ -79,8 +82,14 @@ export async function POST(request: NextRequest) {
                 cryptoTxId: cryptoTxId.trim(),
                 cryptoNetwork,
                 cryptoAddress: cryptoAddresses[cryptoNetwork],
-            },
-        });
+            })
+            .select()
+            .single();
+
+        if (createError) {
+            console.error('Crypto create payment error:', createError);
+            throw createError;
+        }
 
         return NextResponse.json({
             message: 'Crypto payment submitted for approval',

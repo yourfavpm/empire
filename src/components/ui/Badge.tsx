@@ -4,7 +4,7 @@ import { cn, getStatusColor, getPaymentStatusColor } from '@/lib/utils';
 
 interface BadgeProps {
     children: React.ReactNode;
-    variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
+    variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline';
     className?: string;
 }
 
@@ -15,6 +15,7 @@ export function Badge({ children, variant = 'default', className }: BadgeProps) 
         warning: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
         error: 'bg-red-500/20 text-red-400 border border-red-500/30',
         info: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+        outline: 'bg-transparent border border-slate-700 text-slate-400',
     };
 
     return (

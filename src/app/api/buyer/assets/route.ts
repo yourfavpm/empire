@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { toNumber } from '@/lib/utils';
 
-// GET /api/buyer/assets - Get buyer's unlocked assets
+// GET /api/buyer/assets - Get buyer's unlocked asset units
 export async function GET() {
     try {
         const session = await auth();
@@ -12,35 +12,43 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const unlockedAssets = await prisma.assetAccess.findMany({
-            where: {
-                userId: session.user.id,
-                revokedAt: null,
-            },
-            include: {
-                asset: true,
-            },
-            orderBy: { grantedAt: 'desc' },
-        });
+        const { data: accessRecords, error } = await supabaseAdmin
+            .from('AssetAccess')
+            .select(`
+                *,
+                assetUnit:AssetUnit(
+                    lockedDescription,
+                    subcategory:Subcategory(
+                        title,
+                        price,
+                        category:Category(name)
+                    )
+                )
+            `)
+            .eq('userId', session.user.id)
+            .is('revokedAt', null)
+            .order('grantedAt', { ascending: false });
+
+        if (error) {
+            console.error('Get buyer assets error:', error);
+            throw error;
+        }
 
         return NextResponse.json({
-            assets: unlockedAssets.map((access) => ({
-                id: access.asset.id,
-                title: access.asset.title,
-                category: access.asset.category,
-                platformType: access.asset.platformType,
-                price: toNumber(access.asset.price),
-                shortDescription: access.asset.shortDescription,
-                fullDescription: access.asset.fullDescription,
-                images: access.asset.images,
-                documents: access.asset.documents,
+            assets: accessRecords.map((access: any) => ({
+                id: access.assetUnitId,
+                title: access.assetUnit.subcategory.title,
+                category: access.assetUnit.subcategory.category.name,
+                price: toNumber(access.assetUnit.subcategory.price),
+                lockedDescription: access.assetUnit.lockedDescription,
+                orderId: access.orderId,
                 unlockedAt: access.grantedAt,
             })),
         });
     } catch (error) {
-        console.error('Get unlocked assets error:', error);
+        console.error('Get buyer assets error:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch unlocked assets' },
+            { error: 'Failed to fetch purchased assets' },
             { status: 500 }
         );
     }

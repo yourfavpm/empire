@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { toNumber } from '@/lib/utils';
 
 // GET /api/buyer/payments - Get buyer's payment history
@@ -12,13 +12,19 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const payments = await prisma.payment.findMany({
-            where: { userId: session.user.id },
-            orderBy: { createdAt: 'desc' },
-        });
+        const { data: payments, error } = await supabaseAdmin
+            .from('Payment')
+            .select('*')
+            .eq('userId', session.user.id)
+            .order('createdAt', { ascending: false });
+
+        if (error) {
+            console.error('Get payments error:', error);
+            throw error;
+        }
 
         return NextResponse.json({
-            payments: payments.map((payment) => ({
+            payments: (payments || []).map((payment: any) => ({
                 ...payment,
                 amount: toNumber(payment.amount),
             })),

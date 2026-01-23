@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // GET /api/messages - Get messages for current user
 export async function GET(request: NextRequest) {
@@ -15,27 +15,29 @@ export async function GET(request: NextRequest) {
 
         // For admins: get all messages grouped by user
         // For buyers: get their own messages
-        let messages;
+        let messagesData;
 
         if (isAdmin) {
-            // Get distinct conversation threads with latest message
-            messages = await prisma.message.findMany({
-                orderBy: { createdAt: 'desc' },
-                include: {
-                    sender: {
-                        select: { id: true, name: true, email: true, role: true },
-                    },
-                    receiver: {
-                        select: { id: true, name: true, email: true, role: true },
-                    },
-                },
-            });
+            // Get all messages with sender and receiver info
+            const { data: messages, error } = await supabaseAdmin
+                .from('Message')
+                .select(`
+                    *,
+                    sender:User!Message_senderId_fkey(id, name, email, role),
+                    receiver:User!Message_receiverId_fkey(id, name, email, role)
+                `)
+                .order('createdAt', { ascending: false });
+
+            if (error) {
+                console.error('Get admin messages error:', error);
+                throw error;
+            }
 
             // Group by conversation (unique sender-receiver pairs excluding admin)
-            const conversations = new Map<string, typeof messages>();
+            const conversations = new Map<string, any[]>();
 
-            for (const msg of messages) {
-                const buyerId = msg.sender.role === 'BUYER' ? msg.senderId : msg.receiverId;
+            for (const msg of (messages || [])) {
+                const buyerId = (msg.sender as any).role === 'BUYER' ? msg.senderId : msg.receiverId;
                 if (!conversations.has(buyerId)) {
                     conversations.set(buyerId, []);
                 }
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({
                 conversations: Array.from(conversations.entries()).map(([buyerId, msgs]) => ({
                     buyerId,
-                    buyer: msgs[0].sender.role === 'BUYER' ? msgs[0].sender : msgs[0].receiver,
+                    buyer: (msgs[0].sender as any).role === 'BUYER' ? msgs[0].sender : msgs[0].receiver,
                     messages: msgs,
                     unreadCount: msgs.filter((m) => !m.isRead && m.receiverId === session.user.id).length,
                     lastMessage: msgs[0],
@@ -53,32 +55,27 @@ export async function GET(request: NextRequest) {
             });
         } else {
             // Buyer: get their messages with admin
-            messages = await prisma.message.findMany({
-                where: {
-                    OR: [
-                        { senderId: session.user.id },
-                        { receiverId: session.user.id },
-                    ],
-                },
-                orderBy: { createdAt: 'desc' },
-                include: {
-                    sender: {
-                        select: { id: true, name: true, role: true },
-                    },
-                    receiver: {
-                        select: { id: true, name: true, role: true },
-                    },
-                },
-            });
+            const { data: messages, error } = await supabaseAdmin
+                .from('Message')
+                .select(`
+                    *,
+                    sender:User!Message_senderId_fkey(id, name, role),
+                    receiver:User!Message_receiverId_fkey(id, name, role)
+                `)
+                .or(`senderId.eq.${session.user.id},receiverId.eq.${session.user.id}`)
+                .order('createdAt', { ascending: false });
+
+            if (error) {
+                console.error('Get buyer messages error:', error);
+                throw error;
+            }
 
             // Mark received messages as read
-            await prisma.message.updateMany({
-                where: {
-                    receiverId: session.user.id,
-                    isRead: false,
-                },
-                data: { isRead: true },
-            });
+            await supabaseAdmin
+                .from('Message')
+                .update({ isRead: true })
+                .eq('receiverId', session.user.id)
+                .eq('isRead', false);
 
             return NextResponse.json({ messages });
         }
@@ -117,12 +114,14 @@ export async function POST(request: NextRequest) {
 
         if (!isAdmin) {
             // Buyers can only message admins
-            const admin = await prisma.user.findFirst({
-                where: { role: 'ADMIN' },
-                select: { id: true },
-            });
+            const { data: admin, error: fetchError } = await supabaseAdmin
+                .from('User')
+                .select('id')
+                .eq('role', 'ADMIN')
+                .limit(1)
+                .single();
 
-            if (!admin) {
+            if (fetchError || !admin) {
                 return NextResponse.json(
                     { error: 'No admin available' },
                     { status: 400 }
@@ -138,11 +137,13 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            const receiver = await prisma.user.findUnique({
-                where: { id: receiverId },
-            });
+            const { data: receiver, error: fetchError } = await supabaseAdmin
+                .from('User')
+                .select('role')
+                .eq('id', receiverId)
+                .single();
 
-            if (!receiver || receiver.role !== 'BUYER') {
+            if (fetchError || !receiver || receiver.role !== 'BUYER') {
                 return NextResponse.json(
                     { error: 'Invalid receiver' },
                     { status: 400 }
@@ -150,22 +151,25 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        const message = await prisma.message.create({
-            data: {
+        const { data: message, error: createError } = await supabaseAdmin
+            .from('Message')
+            .insert({
                 senderId: session.user.id,
                 receiverId: finalReceiverId,
                 subject,
                 content,
-            },
-            include: {
-                sender: {
-                    select: { id: true, name: true, role: true },
-                },
-                receiver: {
-                    select: { id: true, name: true, role: true },
-                },
-            },
-        });
+            })
+            .select(`
+                *,
+                sender:User!Message_senderId_fkey(id, name, role),
+                receiver:User!Message_receiverId_fkey(id, name, role)
+            `)
+            .single();
+
+        if (createError) {
+            console.error('Send message error:', createError);
+            throw createError;
+        }
 
         return NextResponse.json({
             message: 'Message sent successfully',

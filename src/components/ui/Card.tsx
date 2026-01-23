@@ -9,13 +9,12 @@ interface CardProps {
     gradient?: boolean;
 }
 
-export function Card({ children, className, hover = false, gradient = false }: CardProps) {
+export function Card({ children, className, hover = false }: CardProps) {
     return (
         <div
             className={cn(
-                'bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6',
-                hover && 'hover:border-violet-500/50 hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-300',
-                gradient && 'bg-gradient-to-br from-slate-800/80 to-slate-900/80',
+                'bg-slate-900 border border-slate-800 rounded-2xl p-6',
+                hover && 'hover:border-cyan-500/50 hover:shadow-xl transition-all duration-300',
                 className
             )}
         >
