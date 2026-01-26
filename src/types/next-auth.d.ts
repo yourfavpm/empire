@@ -1,6 +1,6 @@
 import 'next-auth';
 
-type Role = 'ADMIN' | 'BUYER';
+type Role = 'SUPER_ADMIN' | 'GENERAL_ADMIN' | 'FINANCE_MANAGER' | 'INVENTORY_MANAGER' | 'BUYER' | 'ADMIN';
 
 declare module 'next-auth' {
     interface User {

@@ -1,0 +1,84 @@
+
+> digital_asset@0.1.0 build
+> next build
+
+▲ Next.js 16.1.4 (Turbopack)
+- Environments: .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.4s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/51) ...
+  Generating static pages using 7 workers (12/51) 
+  Generating static pages using 7 workers (25/51) 
+  Generating static pages using 7 workers (38/51) 
+✓ Generating static pages using 7 workers (51/51) in 339.2ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ○ /admin/assets
+├ ○ /admin/banners
+├ ○ /admin/messages
+├ ○ /admin/payments
+├ ○ /admin/settings
+├ ○ /admin/team
+├ ○ /admin/users
+├ ƒ /admin/users/[id]
+├ ƒ /api/admin/asset-units
+├ ƒ /api/admin/assets/[id]/feature
+├ ƒ /api/admin/banners
+├ ƒ /api/admin/categories
+├ ƒ /api/admin/impersonate
+├ ƒ /api/admin/payments
+├ ƒ /api/admin/settings
+├ ƒ /api/admin/setup-seed
+├ ƒ /api/admin/stats
+├ ƒ /api/admin/stats/detailed
+├ ƒ /api/admin/subcategories
+├ ƒ /api/admin/team
+├ ƒ /api/admin/transactions
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/admin/users/[id]/block
+├ ƒ /api/admin/wallet/adjust
+├ ƒ /api/assets
+├ ƒ /api/assets/[id]
+├ ƒ /api/assets/featured
+├ ƒ /api/assets/unlock-batch
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/register
+├ ƒ /api/banners
+├ ƒ /api/buyer/assets
+├ ƒ /api/buyer/payments
+├ ƒ /api/categories
+├ ƒ /api/debug-db
+├ ƒ /api/messages
+├ ƒ /api/payments/crypto
+├ ƒ /api/payments/crypto/[id]/approve
+├ ƒ /api/payments/paystack/init
+├ ƒ /api/payments/paystack/verify
+├ ƒ /api/payments/paystack/webhook
+├ ƒ /api/referral/stats
+├ ƒ /api/upload
+├ ƒ /api/wallet
+├ ○ /assets
+├ ƒ /assets/[id]
+├ ○ /buyer
+├ ○ /buyer/assets
+├ ○ /buyer/messages
+├ ○ /buyer/referral
+├ ○ /buyer/wallet
+├ ○ /login
+└ ○ /signup
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

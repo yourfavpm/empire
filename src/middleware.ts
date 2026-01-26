@@ -8,6 +8,7 @@ export default auth((req) => {
     const { nextUrl } = req;
     const isLoggedIn = !!req.auth;
     const userRole = req.auth?.user?.role;
+    const ADMIN_ROLES = ['SUPER_ADMIN', 'GENERAL_ADMIN', 'FINANCE_MANAGER', 'INVENTORY_MANAGER', 'ADMIN'];
 
     // Define protected route patterns
     const isAdminRoute = nextUrl.pathname.startsWith('/admin');
@@ -22,7 +23,7 @@ export default auth((req) => {
 
     // Redirect logged-in users away from auth pages
     if (isAuthRoute && isLoggedIn) {
-        if (userRole === 'ADMIN') {
+        if (ADMIN_ROLES.includes(userRole as string)) {
             return NextResponse.redirect(new URL('/admin', nextUrl));
         }
         return NextResponse.redirect(new URL('/buyer', nextUrl));
@@ -33,7 +34,7 @@ export default auth((req) => {
         if (!isLoggedIn) {
             return NextResponse.redirect(new URL('/login', nextUrl));
         }
-        if (userRole !== 'ADMIN') {
+        if (!ADMIN_ROLES.includes(userRole as string)) {
             return NextResponse.redirect(new URL('/buyer', nextUrl));
         }
     }
@@ -43,7 +44,7 @@ export default auth((req) => {
         if (!isLoggedIn) {
             return NextResponse.redirect(new URL('/login', nextUrl));
         }
-        if (userRole === 'ADMIN') {
+        if (ADMIN_ROLES.includes(userRole as string)) {
             return NextResponse.redirect(new URL('/admin', nextUrl));
         }
     }

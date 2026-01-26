@@ -5,17 +5,30 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, StatusBadge } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
 
 interface AdminUser {
     id: string;
     name: string;
     email: string;
     role: string;
+    blocked: boolean;
     createdAt: string;
     lastLogin?: string;
 }
 
+const ADMIN_ROLES = [
+    { id: 'SUPER_ADMIN', name: 'Super Admin', desc: 'Full system access & team mgmt' },
+    { id: 'GENERAL_ADMIN', name: 'General Admin', desc: 'Manage everything except team' },
+    { id: 'FINANCE_MANAGER', name: 'Finance Manager', desc: 'Payments & user accounts' },
+    { id: 'INVENTORY_MANAGER', name: 'Inventory Manager', desc: 'Assets & Stock only' },
+];
+
 export default function AdminTeamPage() {
+    const { data: session } = useSession();
+    const currentUserRole = session?.user?.role;
+    const isSuperAdmin = currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN';
+
     const [admins, setAdmins] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [showInviteForm, setShowInviteForm] = useState(false);
@@ -24,6 +37,7 @@ export default function AdminTeamPage() {
     const [newName, setNewName] = useState('');
     const [newEmail, setNewEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [newRole, setNewRole] = useState('GENERAL_ADMIN');
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -50,20 +64,25 @@ export default function AdminTeamPage() {
             const res = await fetch('/api/admin/team', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newName, email: newEmail, password: newPassword })
+                body: JSON.stringify({
+                    name: newName,
+                    email: newEmail,
+                    password: newPassword,
+                    role: newRole
+                })
             });
 
             const data = await res.json();
 
             if (res.ok) {
-                toast.success('Admin invited successfully');
+                toast.success('Admin authorized successfully');
                 setShowInviteForm(false);
                 setNewName('');
                 setNewEmail('');
                 setNewPassword('');
                 fetchAdmins();
             } else {
-                toast.error(data.error || 'Failed to invite admin');
+                toast.error(data.error || 'Failed to authorize admin');
             }
         } catch (error) {
             toast.error('Something went wrong');
@@ -72,25 +91,52 @@ export default function AdminTeamPage() {
         }
     };
 
+    const handleToggleStatus = async (id: string, currentBlocked: boolean) => {
+        if (!isSuperAdmin) return;
+
+        const action = currentBlocked ? 'activate' : 'deactivate';
+        if (!confirm(`Are you sure you want to ${action} this administrator?`)) return;
+
+        try {
+            const res = await fetch('/api/admin/team', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, blocked: !currentBlocked })
+            });
+
+            if (res.ok) {
+                toast.success(`Admin ${action}d successfully`);
+                fetchAdmins();
+            } else {
+                const data = await res.json();
+                toast.error(data.error || `Failed to ${action} admin`);
+            }
+        } catch (error) {
+            toast.error('Operation failed');
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-brand tracking-tight">Team Management</h1>
-                    <p className="text-[10px] text-slate-500 mt-1 uppercase font-black tracking-widest">Manage internal administrative access</p>
+                    <p className="text-[10px] text-slate-500 mt-1 uppercase font-black tracking-widest">Internal permissions & operational controls</p>
                 </div>
-                <Button onClick={() => setShowInviteForm(!showInviteForm)} size="sm" className={`h-9 px-4 text-[11px] font-black uppercase tracking-widest ${showInviteForm ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-brand text-white hover:bg-brand-light'}`}>
-                    {showInviteForm ? 'Close Directory' : '+ Add Administrator'}
-                </Button>
+                {isSuperAdmin && (
+                    <Button onClick={() => setShowInviteForm(!showInviteForm)} size="sm" className={`h-9 px-4 text-[11px] font-black uppercase tracking-widest ${showInviteForm ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-brand text-white hover:bg-brand-light'}`}>
+                        {showInviteForm ? 'Close Directory' : '+ Add Administrator'}
+                    </Button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 {/* Invite Form */}
-                {showInviteForm && (
+                {showInviteForm && isSuperAdmin && (
                     <div className="lg:col-span-1">
                         <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
                             <CardHeader className="border-b border-slate-50 bg-slate-50/50">
-                                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Invite New Admin</CardTitle>
+                                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Invite New Personnel</CardTitle>
                             </CardHeader>
                             <CardContent className="p-6">
                                 <form onSubmit={handleInvite} className="space-y-4">
@@ -113,15 +159,27 @@ export default function AdminTeamPage() {
                                     />
                                     <Input
                                         placeholder="••••••••"
-                                        label="Secure Password"
+                                        label="Secure Terminal Password"
                                         type="password"
                                         value={newPassword}
                                         onChange={e => setNewPassword(e.target.value)}
                                         className="h-10 text-xs bg-white border-slate-300 font-bold"
                                         required
                                     />
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Privilege</label>
+                                        <select
+                                            value={newRole}
+                                            onChange={e => setNewRole(e.target.value)}
+                                            className="w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:ring-1 focus:ring-brand outline-none"
+                                        >
+                                            {ADMIN_ROLES.map(role => (
+                                                <option key={role.id} value={role.id}>{role.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     <Button type="submit" className="w-full h-10 mt-2 bg-brand font-black uppercase tracking-widest text-[10px]" loading={submitting}>
-                                        Grant Access
+                                        Grant System Access
                                     </Button>
                                 </form>
                             </CardContent>
@@ -130,10 +188,10 @@ export default function AdminTeamPage() {
                 )}
 
                 {/* Team List */}
-                <div className={showInviteForm ? 'lg:col-span-2' : 'lg:col-span-3'}>
+                <div className={(showInviteForm && isSuperAdmin) ? 'lg:col-span-2' : 'lg:col-span-3'}>
                     <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
                         <CardHeader className="border-b border-slate-50 bg-slate-50/50">
-                            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Internal Directory</CardTitle>
+                            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operational Personnel</CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -141,9 +199,9 @@ export default function AdminTeamPage() {
                                     <thead className="bg-slate-50/50 border-b border-slate-100">
                                         <tr>
                                             <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Administrator</th>
-                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Position</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Privilege</th>
                                             <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Joined On</th>
-                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Current Status</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Access Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
@@ -161,9 +219,11 @@ export default function AdminTeamPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-5">
-                                                        <span className="bg-brand/5 text-brand text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-brand/10">
-                                                            {admin.role}
-                                                        </span>
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="w-fit bg-brand/5 text-brand text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-brand/10">
+                                                                {admin.role.replace('_', ' ')}
+                                                            </span>
+                                                        </div>
                                                     </td>
                                                     <td className="px-6 py-5">
                                                         <span className="text-[10px] text-slate-400 font-black uppercase">
@@ -171,9 +231,25 @@ export default function AdminTeamPage() {
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-5">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-                                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Connected</span>
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <div className="flex items-center gap-2 min-w-[100px]">
+                                                                <div className={`w-2 h-2 rounded-full ${admin.blocked ? 'bg-red-500' : 'bg-emerald-500'} shadow-sm`} />
+                                                                <span className={`text-[10px] font-black uppercase tracking-widest ${admin.blocked ? 'text-red-500' : 'text-emerald-600'}`}>
+                                                                    {admin.blocked ? 'Suspended' : 'Clearance'}
+                                                                </span>
+                                                            </div>
+
+                                                            {isSuperAdmin && admin.role !== 'SUPER_ADMIN' && admin.role !== 'ADMIN' && (
+                                                                <button
+                                                                    onClick={() => handleToggleStatus(admin.id, admin.blocked)}
+                                                                    className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${admin.blocked
+                                                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'
+                                                                            : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                                                                        }`}
+                                                                >
+                                                                    {admin.blocked ? 'Restore' : 'Revoke'}
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>

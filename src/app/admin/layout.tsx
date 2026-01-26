@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
 
 const navigation = [
     { name: 'Dashboard', href: '/admin', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -20,6 +21,29 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const { data: session } = useSession();
+    const userRole = session?.user?.role;
+
+    const filteredNavigation = navigation.filter(item => {
+        if (!userRole) return false;
+
+        // Super Admin gets everything
+        if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') return true;
+
+        if (userRole === 'INVENTORY_MANAGER') {
+            return ['Dashboard', 'Assets'].includes(item.name);
+        }
+
+        if (userRole === 'FINANCE_MANAGER') {
+            return ['Dashboard', 'Payments', 'Users'].includes(item.name);
+        }
+
+        if (userRole === 'GENERAL_ADMIN') {
+            return item.name !== 'Team';
+        }
+
+        return false;
+    });
 
     return (
         <div className="min-h-screen bg-white flex">
@@ -37,7 +61,7 @@ export default function AdminLayout({
 
                     {/* Navigation */}
                     <nav className="flex-1 px-4 py-6 space-y-1">
-                        {navigation.map((item) => {
+                        {filteredNavigation.map((item) => {
                             const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
                             return (
                                 <Link

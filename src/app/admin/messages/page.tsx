@@ -144,14 +144,14 @@ export default function AdminMessagesPage() {
                                     {selectedConversation.messages.map((msg) => (
                                         <div
                                             key={msg.id}
-                                            className={`p-5 rounded-2xl border ${msg.sender.role === 'ADMIN'
+                                            className={`p-5 rounded-2xl border ${msg.sender.role !== 'BUYER'
                                                 ? 'bg-brand/5 border-brand/10 ml-12'
                                                 : 'bg-slate-50 border-slate-100 mr-12'
                                                 }`}
                                         >
                                             <div className="flex items-center justify-between mb-3">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest ${msg.sender.role === 'ADMIN' ? 'text-brand' : 'text-slate-600'}`}>
-                                                    {msg.sender.role === 'ADMIN' ? 'Site Administrator' : msg.sender.name}
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${msg.sender.role !== 'BUYER' ? 'text-brand' : 'text-slate-600'}`}>
+                                                    {msg.sender.role !== 'BUYER' ? 'Site Administrator' : msg.sender.name}
                                                 </span>
                                                 <span className="text-[9px] text-slate-400 font-bold uppercase">
                                                     {formatDate(msg.createdAt)}

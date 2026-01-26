@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const isAdmin = session.user.role === 'ADMIN';
+        const isAdmin = session.user.role !== 'BUYER';
 
         // For admins: get all messages grouped by user
         // For buyers: get their own messages
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const isAdmin = session.user.role === 'ADMIN';
+        const isAdmin = session.user.role !== 'BUYER';
 
         // Determine receiver
         let finalReceiverId = receiverId;
