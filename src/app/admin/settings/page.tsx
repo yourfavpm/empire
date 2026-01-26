@@ -19,6 +19,7 @@ export default function AdminSettingsPage() {
     // Banner states
     const [banners, setBanners] = useState<any[]>([]);
     const [newBanner, setNewBanner] = useState({ content: '', link: '', active: true });
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -55,6 +56,36 @@ export default function AdminSettingsPage() {
         }
     };
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setNewBanner(prev => ({ ...prev, content: data.url }));
+                alert('Image uploaded successfully');
+            } else {
+                const error = await res.json();
+                alert(`Upload failed: ${error.error}`);
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Upload failed. Please try again.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSaveSetting = async (key: string, value: string, description: string) => {
         setSaving(true);
         try {
@@ -78,7 +109,7 @@ export default function AdminSettingsPage() {
 
     const handleAddBanner = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newBanner.content) return;
+        if (!newBanner.content) return alert('Please provide an image or upload one');
 
         setSaving(true);
         try {
@@ -223,13 +254,34 @@ export default function AdminSettingsPage() {
                         <CardContent className="p-6">
                             <form onSubmit={handleAddBanner} className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] uppercase font-black text-slate-400 mb-1.5 block tracking-widest">Image URL</label>
-                                    <Input
-                                        value={newBanner.content}
-                                        onChange={e => setNewBanner({ ...newBanner, content: e.target.value })}
-                                        className="h-10 bg-white border-slate-300 font-black text-brand text-xs"
-                                        placeholder="https://example.com/image.jpg"
-                                    />
+                                    <label className="text-[10px] uppercase font-black text-slate-400 mb-1.5 block tracking-widest">Image Source</label>
+                                    <div className="space-y-3">
+                                        <Input
+                                            value={newBanner.content}
+                                            onChange={e => setNewBanner({ ...newBanner, content: e.target.value })}
+                                            className="h-10 bg-white border-slate-300 font-black text-brand text-xs"
+                                            placeholder="https://example.com/image.jpg"
+                                        />
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-1 h-px bg-slate-100" />
+                                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">Or Upload</span>
+                                            <div className="flex-1 h-px bg-slate-100" />
+                                        </div>
+                                        <div className="relative group">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                disabled={uploading}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            />
+                                            <div className="h-12 border-2 border-dashed border-slate-100 group-hover:border-brand/20 rounded-xl flex items-center justify-center transition-all bg-slate-50/30">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                    {uploading ? 'Processing Architecture...' : 'Select Terminal Image'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase font-black text-slate-400 mb-1.5 block tracking-widest">Link (Optional)</label>
