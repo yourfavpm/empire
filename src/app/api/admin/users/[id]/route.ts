@@ -25,17 +25,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         // Fetch Wallet
         const { data: wallet } = await supabaseAdmin
             .from("Wallet")
-            .select("balance")
+            .select("id, balance")
             .eq("userId", id)
             .single();
 
-        // Fetch Transactions
-        const { data: transactions } = await supabaseAdmin
-            .from("Transaction")
-            .select("*")
-            .eq("userId", id)
-            .order("createdAt", { ascending: false })
-            .limit(50);
+        // Fetch Transactions via wallet ID
+        let transactions = [];
+        if (wallet?.id) {
+            const { data: txs } = await supabaseAdmin
+                .from("Transaction")
+                .select("*")
+                .eq("walletId", wallet.id)
+                .order("createdAt", { ascending: false })
+                .limit(50);
+            transactions = txs || [];
+        }
 
         return NextResponse.json({
             user: { ...user, balance: wallet?.balance || 0 },

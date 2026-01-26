@@ -39,11 +39,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         // Fetch User
                         const { data: user, error } = await supabaseAdmin
                             .from('User')
-                            .select('id, email, name, role, image')
+                            .select('id, email, name, role, image, blocked')
                             .eq('id', userId)
                             .single();
 
                         if (user && !error) {
+                            if (user.blocked) {
+                                throw new Error('Cannot impersonate a suspended user.');
+                            }
                             return { ...user };
                         }
                         return null;
@@ -59,12 +62,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
                 const { data: user, error } = await supabaseAdmin
                     .from('User')
-                    .select('id, email, name, password, role, image')
+                    .select('id, email, name, password, role, image, blocked')
                     .eq('email', credentials.email as string)
                     .single();
 
                 if (error || !user) {
                     return null;
+                }
+
+                // Check if user is blocked
+                if (user.blocked) {
+                    throw new Error('Your account has been suspended. Please contact support.');
                 }
 
                 const isPasswordValid = await bcrypt.compare(
