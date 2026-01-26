@@ -78,16 +78,21 @@ export default async function HomePage() {
     { id: 'l3', content: '/banner3.jpeg', link: '/assets', active: true },
   ];
 
-  const banners = [...localBanners, ...dbBanners];
+  const allBanners = [...localBanners, ...dbBanners];
+  const slidingBanners = allBanners.filter(b => {
+    const content = b.content.toLowerCase();
+    const isImage = content.match(/\.(jpg|jpeg|png|webp|gif|svg)/) || content.includes('/storage/v1/object/public/');
+    return isImage;
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
 
-      <main className="flex-1 pt-16">
+      <main className="flex-1 pt-24 md:pt-28">
         {/* Section 1: Sliding Banner */}
         <section className="mb-8">
-          <SlidingBanner banners={banners} />
+          <SlidingBanner banners={slidingBanners} />
 
           <div className="max-w-7xl mx-auto px-4 mt-12 mb-8 text-center animate-fade-in-up">
             <h2 className="text-2xl md:text-3xl font-bold text-brand tracking-tight">

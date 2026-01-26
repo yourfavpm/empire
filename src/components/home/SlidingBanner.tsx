@@ -30,24 +30,29 @@ export function SlidingBanner({ banners }: SlidingBannerProps) {
     }
 
     return (
-        <div className="w-full bg-white border-b border-slate-100 overflow-hidden relative">
-            <div className="max-w-7xl mx-auto px-0 md:px-8 py-4">
-                <div className="relative aspect-[21/9] md:aspect-[24/7] overflow-hidden rounded-xl shadow-sm border border-slate-100">
-                    {banners.map((banner, index) => (
-                        <div
-                            key={banner.id}
-                            className={`absolute inset-0 transition-opacity duration-1000 ${index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                                }`}
-                        >
-                            <Link href={banner.link || '#'}>
-                                <img
-                                    src={banner.content}
-                                    alt="Promotional Banner"
-                                    className="w-full h-full object-cover"
-                                />
-                            </Link>
-                        </div>
-                    ))}
+        <div className="w-full bg-white overflow-hidden relative">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-8">
+                <div className="relative aspect-[21/9] md:aspect-[24/7] overflow-hidden rounded-2xl shadow-xl shadow-black/5 border border-slate-100 group">
+                    {/* Sliding Container */}
+                    <div
+                        className="flex h-full transition-transform duration-700 ease-out"
+                        style={{ transform: `translateX(-${current * 100}%)` }}
+                    >
+                        {banners.map((banner) => (
+                            <div
+                                key={banner.id}
+                                className="w-full h-full flex-shrink-0 relative"
+                            >
+                                <Link href={banner.link || '#'} className="block h-full w-full">
+                                    <img
+                                        src={banner.content}
+                                        alt="Promotional Banner"
+                                        className="w-full h-full object-cover select-none"
+                                    />
+                                </Link>
+                            </div>
+                        ))}
+                    </div>
 
                     {/* Progress Indicators */}
                     {banners.length > 1 && (

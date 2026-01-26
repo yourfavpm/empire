@@ -1,78 +1,82 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
-import { MainCategory } from '@/types'; // Assuming this exists or defining it inline if needed
+import { PromotionalBanner } from '@/components/PromotionalBanner';
 
 interface CategoryListProps {
-    categories: MainCategory[];
+    categories: any[];
 }
 
 export function CategoryList({ categories }: CategoryListProps) {
-    // We display all categories stacked
-
     return (
         <section className="py-16 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
                 <div className="text-left mb-8">
-                    <h2 className="text-3xl font-bold text-brand">Marketplace</h2>
-                    <p className="text-slate-500 mt-2">Browse our premium collection of digital assets.</p>
+                    <h2 className="text-3xl font-bold text-brand uppercase tracking-tighter">Marketplace</h2>
+                    <p className="text-slate-500 mt-2 font-medium">Browse our premium collection of digital assets.</p>
                 </div>
 
-                {categories.map((cat) => (
+                {categories.map((cat, index) => (
                     <div key={cat.category} className="w-full">
                         {/* Category Header */}
-                        <div className="flex items-end justify-between border-b border-slate-200 pb-4 mb-6">
+                        <div className="flex items-end justify-between border-b border-slate-100 pb-5 mb-8">
                             <div>
-                                <h3 className="text-xl font-bold text-brand flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-brand rounded-full"></span>
+                                <h3 className="text-xl font-black text-brand uppercase tracking-tight flex items-center gap-3">
+                                    <div className="w-2 h-2 bg-brand rounded-full animate-pulse"></div>
                                     {cat.category}
                                 </h3>
-                                <p className="text-xs text-slate-500 mt-1 pl-4">
-                                    {cat.count} available items
+                                <p className="text-[10px] text-slate-400 mt-1 pl-5 font-black uppercase tracking-[0.2em]">
+                                    {cat.count} Available Protocol Units
                                 </p>
                             </div>
                             <Link
                                 href={`/assets?category=${encodeURIComponent(cat.category)}`}
-                                className="text-sm font-medium text-brand hover:text-brand-light transition-colors"
+                                className="text-[10px] font-black text-brand hover:text-brand-light transition-colors uppercase tracking-widest border border-slate-100 px-4 py-2 rounded-xl bg-slate-50/50"
                             >
-                                View all →
+                                Expansion View →
                             </Link>
                         </div>
 
                         {/* Grid of Subcategories */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {cat.assets.slice(0, 8).map((asset) => (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {cat.assets.slice(0, 8).map((asset: any) => (
                                 <Link
                                     key={asset.id}
                                     href={`/assets/${asset.id}`}
-                                    className={`group block bg-white border border-slate-200 rounded-lg p-4 hover:border-brand hover:shadow-sm transition-all ${asset.availableStock === 0 ? 'opacity-60' : ''}`}
+                                    className={`group block bg-white border border-slate-100 rounded-2xl p-6 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/5 transition-all relative overflow-hidden ${asset.availableStock === 0 ? 'opacity-60' : ''}`}
                                 >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-semibold text-brand group-hover:text-brand-light transition-colors line-clamp-1">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h4 className="font-bold text-brand group-hover:text-brand-light transition-colors line-clamp-1 text-sm uppercase tracking-tight">
                                             {asset.title}
                                         </h4>
-                                        <span className="text-xs font-bold text-slate-900 bg-slate-50 px-2 py-1 rounded">
+                                        <span className="text-[10px] font-black text-brand bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg">
                                             {formatCurrency(asset.price)}
                                         </span>
                                     </div>
 
-                                    <p className="text-xs text-slate-500 line-clamp-2 mb-4 h-8">
+                                    <p className="text-[11px] text-slate-500 line-clamp-2 mb-6 h-8 font-medium leading-relaxed">
                                         {asset.shortDescription}
                                     </p>
 
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className={`${asset.availableStock > 0 ? 'text-green-600' : 'text-red-500'} font-medium`}>
-                                            {asset.availableStock > 0 ? `${asset.availableStock} in stock` : 'Sold Out'}
-                                        </span>
-                                        <span className="text-brand font-medium group-hover:underline">
-                                            Buy Now
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${asset.availableStock > 0 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-red-500'}`} />
+                                            <span className={`text-[9px] font-black uppercase tracking-widest ${asset.availableStock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                {asset.availableStock > 0 ? `${asset.availableStock} Units Active` : 'Terminated'}
+                                            </span>
+                                        </div>
+                                        <span className="text-[10px] font-black text-brand uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+                                            Initiate →
                                         </span>
                                     </div>
                                 </Link>
                             ))}
+                        </div>
+
+                        {/* Mobile: Promotional Banner between categories */}
+                        <div className="md:hidden mt-16 pt-8 border-t border-slate-50">
+                            <PromotionalBanner />
                         </div>
                     </div>
                 ))}

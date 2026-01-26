@@ -63,7 +63,7 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
 
             if (res.ok) {
                 toast.success(`Successfully unlocked ${quantity} unit(s)!`);
-                router.push('/dashboard');
+                router.push('/buyer/assets');
             } else {
                 toast.error(data.error || 'Failed to complete purchase');
             }

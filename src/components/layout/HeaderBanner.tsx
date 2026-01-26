@@ -17,8 +17,13 @@ export function HeaderBanner() {
         fetch('/api/banners')
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data) && data.length > 0) {
-                    setBanners(data);
+                if (Array.isArray(data)) {
+                    const textBanners = data.filter(b => {
+                        const content = b.content.toLowerCase();
+                        const isImage = content.match(/\.(jpg|jpeg|png|webp|gif|svg)/) || content.includes('/storage/v1/object/public/');
+                        return !isImage;
+                    });
+                    setBanners(textBanners);
                 }
             })
             .catch(err => console.error(err));

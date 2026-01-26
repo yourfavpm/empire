@@ -21,6 +21,16 @@ export default auth((req) => {
         return NextResponse.next();
     }
 
+    // Allow all users (logged in or not) to see the landing page
+    /*
+    if (nextUrl.pathname === '/' && isLoggedIn) {
+        if (ADMIN_ROLES.includes(userRole as string)) {
+            return NextResponse.redirect(new URL('/admin', nextUrl));
+        }
+        return NextResponse.redirect(new URL('/buyer', nextUrl));
+    }
+    */
+
     // Redirect logged-in users away from auth pages
     if (isAuthRoute && isLoggedIn) {
         if (ADMIN_ROLES.includes(userRole as string)) {

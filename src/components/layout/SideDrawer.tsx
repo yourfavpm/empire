@@ -42,82 +42,99 @@ export function SideDrawer({ isOpen, onClose }: SideDrawerProps) {
             />
 
             {/* Drawer */}
-            <div className={`fixed inset-y-0 right-0 w-[85%] max-w-[320px] bg-slate-900 border-l border-slate-800 z-[70] transform transition-transform duration-300 ease-out flex flex-col md:hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed inset-y-0 right-0 w-[85%] max-w-[320px] bg-white border-l border-slate-100 shadow-2xl z-[70] transform transition-transform duration-300 ease-out flex flex-col md:hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
 
                 {/* Header */}
-                <div className="p-4 flex items-center justify-between border-b border-slate-800/50">
-                    <h2 className="text-lg font-bold text-white tracking-tight">Menu</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
-                        <X className="w-5 h-5" />
+                <div className="p-5 flex items-center justify-between border-b border-slate-50">
+                    <h2 className="text-sm font-black text-brand uppercase tracking-widest">Navigation</h2>
+                    <button onClick={onClose} className="text-slate-400 hover:text-brand transition-colors p-2 bg-slate-50 rounded-full">
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                <div className="flex-1 overflow-y-auto p-5 space-y-8">
 
-                    {/* Wallet Section */}
-                    <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800/50">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs uppercase font-bold text-slate-500">Wallet Balance</span>
-                            <Wallet className="w-4 h-4 text-emerald-400" />
+                    {/* Wallet Section - Premium Card */}
+                    <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <Wallet className="w-12 h-12 text-brand" />
                         </div>
-                        <div className="text-2xl font-black text-white mb-3">
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Available Funds</span>
+                        </div>
+                        <div className="text-2xl font-black text-brand mb-6 tracking-tight">
                             {status === 'authenticated' ? formatCurrency(walletBalance) : '₦0.00'}
                         </div>
                         {status === 'authenticated' ? (
-                            <Link href="/buyer/wallet" onClick={onClose}>
-                                <Button size="sm" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-8">Add Funds</Button>
+                            <Link href="/buyer/wallet" onClick={onClose} className="block">
+                                <Button className="w-full bg-brand hover:bg-brand-light text-white font-black text-[10px] uppercase tracking-widest h-10 shadow-lg shadow-brand/10 transition-all">
+                                    Top Up Capital
+                                </Button>
                             </Link>
                         ) : (
-                            <Link href="/login" onClick={onClose}>
-                                <Button size="sm" className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold h-8">Login to Fund</Button>
+                            <Link href="/login" onClick={onClose} className="block">
+                                <Button className="w-full bg-brand hover:bg-brand-light text-white font-black text-[10px] uppercase tracking-widest h-10 shadow-lg shadow-brand/10 transition-all">
+                                    Authenticate Terminal
+                                </Button>
                             </Link>
                         )}
                     </div>
 
                     {/* Navigation */}
-                    <nav className="space-y-1">
-                        <Link href="/" onClick={onClose} className="flex items-center gap-3 p-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors">
-                            <LayoutDashboard className="w-4 h-4" />
-                            <span className="font-medium text-sm">Home</span>
-                        </Link>
-                        <Link href="/assets" onClick={onClose} className="flex items-center gap-3 p-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors">
-                            <LayoutDashboard className="w-4 h-4" />
-                            <span className="font-medium text-sm">Browse Assets</span>
+                    <nav className="space-y-4">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-4">Main Menu</p>
+
+                        {status === 'authenticated' && (
+                            <Link
+                                href={session.user.role === 'ADMIN' || session.user.role.includes('_ADMIN') ? '/admin' : '/buyer'}
+                                onClick={onClose}
+                                className="flex items-center gap-4 p-4 text-brand bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all group"
+                            >
+                                <LayoutDashboard className="w-4 h-4 text-brand" />
+                                <span className="font-black text-xs uppercase tracking-widest">Dashboard</span>
+                            </Link>
+                        )}
+
+                        <Link href="/" onClick={onClose} className="flex items-center gap-4 p-4 text-slate-600 hover:text-brand hover:bg-slate-50 rounded-2xl transition-all group">
+                            <LayoutDashboard className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                            <span className="font-black text-xs uppercase tracking-widest">Home Portal</span>
                         </Link>
 
-                        {/* External Link */}
-                        <a href="https://example.com/foreign-numbers" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 text-amber-300 hover:text-amber-200 hover:bg-amber-900/10 rounded-lg transition-colors">
+                        <Link href="/assets" onClick={onClose} className="flex items-center gap-4 p-4 text-slate-600 hover:text-brand hover:bg-slate-50 rounded-2xl transition-all group">
+                            <History className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                            <span className="font-black text-xs uppercase tracking-widest">Marketplace</span>
+                        </Link>
+
+                        <div className="h-px bg-slate-100 my-4" />
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-4">Support & Tools</p>
+
+                        <Link href="/buyer/messages" onClick={onClose} className="flex items-center gap-4 p-4 text-slate-600 hover:text-brand hover:bg-slate-50 rounded-2xl transition-all group">
+                            <MessageCircle className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                            <span className="font-black text-xs uppercase tracking-widest">Help Center</span>
+                        </Link>
+
+                        <Link href="/buyer/referral" onClick={onClose} className="flex items-center gap-4 p-4 text-slate-600 hover:text-brand hover:bg-slate-50 rounded-2xl transition-all group">
+                            <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                            <span className="font-black text-xs uppercase tracking-widest">Referral Program</span>
+                        </Link>
+
+                        <a href="https://example.com/foreign-numbers" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 text-emerald-600 bg-emerald-50/50 hover:bg-emerald-50 rounded-2xl transition-all group">
                             <ExternalLink className="w-4 h-4" />
-                            <span className="font-bold text-sm">Buy Foreign Numbers</span>
+                            <span className="font-black text-xs uppercase tracking-widest">Foreign Numbers</span>
                         </a>
-
-                        <div className="h-px bg-slate-800/50 my-2" />
-
-                        <Link href="/buyer/messages" onClick={onClose} className="flex items-center gap-3 p-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors">
-                            <MessageCircle className="w-4 h-4" />
-                            <span className="font-medium text-sm">Support</span>
-                        </Link>
-                        <Link href="/referral" onClick={onClose} className="flex items-center gap-3 p-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors">
-                            <MessageCircle className="w-4 h-4" />
-                            <span className="font-medium text-sm">Referral</span>
-                        </Link>
-                        <Link href="/logs" onClick={onClose} className="flex items-center gap-3 p-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors">
-                            <History className="w-4 h-4" />
-                            <span className="font-medium text-sm">Browse Logs</span>
-                        </Link>
                     </nav>
 
                 </div>
 
                 {/* Footer / Logout */}
                 {status === 'authenticated' && (
-                    <div className="p-4 border-t border-slate-800 bg-slate-900">
+                    <div className="p-6 border-t border-slate-50 pb-10">
                         <button
                             onClick={() => { signOut(); onClose(); }}
-                            className="w-full flex items-center justify-center gap-2 p-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors font-bold text-sm"
+                            className="w-full flex items-center justify-center gap-2 p-4 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all font-black text-xs uppercase tracking-widest"
                         >
-                            Log Out
+                            De-authorize Machine
                         </button>
                     </div>
                 )}

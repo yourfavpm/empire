@@ -41,43 +41,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Hard Overrides to enforce Deep Blue theme for legacy components */
-.bg-slate-900,
-.bg-slate-800 {
-  background-color: #ffffff !important;
-  color: #1e3a8a !important;
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
 
-.text-slate-300,
-.text-slate-400 {
-  color: #64748b !important;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* DO NOT override .text-white globally as it's needed for blue backgrounds */
-
-nav {
-  background-color: var(--brand) !important;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
 }
 
-nav a,
-nav button,
-nav span,
-nav svg {
-  color: #ffffff !important;
-}
-
-/* Specific override for brand-colored elements or white backgrounds in the navbar to ensure visibility */
-nav .text-brand,
-nav .bg-white,
-nav .bg-white span,
-nav .bg-white svg,
-nav button.bg-white {
-  color: var(--brand) !important;
-}
-
-/* Reset gradients to solid */
-[class*="bg-gradient-"] {
-  background-image: none !important;
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
 }
 
 @keyframes fade-in-up {
