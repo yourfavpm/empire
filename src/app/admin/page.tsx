@@ -1,38 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent, Badge, Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Link from 'next/link';
 
+interface TopCustomer {
+    name: string;
+    email: string;
+    country: string;
+    total_spent: number;
+}
+
 interface Stats {
-    totalBuyers: number;
-    totalAssets: number;
-    activeAssets: number;
-    totalPayments: number;
-    pendingCryptoPayments: number;
+    totalUsers: number;
+    totalBlockedUsers: number;
     totalRevenue: number;
-}
-
-interface Payment {
-    id: string;
-    amount: number;
-    type: string;
-    status: string;
-    createdAt: string;
-    user: { name: string; email: string };
-}
-
-interface AssetAccess {
-    grantedAt: string;
-    user: { name: string };
-    asset: { title: string; price: number };
+    totalWalletRecharge: number;
+    newUsersToday: number;
+    rechargedToday: number;
+    revenueToday: number;
+    topCustomers: TopCustomer[];
 }
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState<Stats | null>(null);
-    const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
-    const [recentUnlocks, setRecentUnlocks] = useState<AssetAccess[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -41,12 +33,10 @@ export default function AdminDashboard() {
 
     const fetchStats = async () => {
         try {
-            const response = await fetch('/api/admin/stats');
+            const response = await fetch('/api/admin/stats/detailed');
             const data = await response.json();
             if (response.ok) {
-                setStats(data.stats);
-                setRecentPayments(data.recentPayments || []);
-                setRecentUnlocks(data.recentUnlocks || []);
+                setStats(data);
             }
         } catch (error) {
             console.error('Failed to fetch stats:', error);
@@ -56,126 +46,110 @@ export default function AdminDashboard() {
     };
 
     const statCards = [
-        { label: 'Total Revenue', value: formatCurrency(stats?.totalRevenue || 0), icon: '💰', color: 'text-cyan-400' },
-        { label: 'Total Buyers', value: stats?.totalBuyers || 0, icon: '👥', color: 'text-blue-400' },
-        { label: 'Active Assets', value: stats?.activeAssets || 0, icon: '📦', color: 'text-emerald-400' },
-        { label: 'Pending Crypto', value: stats?.pendingCryptoPayments || 0, icon: '⏳', color: 'text-amber-400', link: '/admin/payments?status=PENDING' },
+        {
+            label: 'Total Revenue',
+            value: formatCurrency(stats?.totalRevenue || 0),
+            subValue: `Today: ${formatCurrency(stats?.revenueToday || 0)}`,
+            icon: '💰',
+            color: 'text-brand'
+        },
+        {
+            label: 'Wallet Recharge',
+            value: formatCurrency(stats?.totalWalletRecharge || 0),
+            subValue: `Today: ${formatCurrency(stats?.rechargedToday || 0)}`,
+            icon: '💳',
+            color: 'text-emerald-600'
+        },
+        {
+            label: 'Total Users',
+            value: stats?.totalUsers || 0,
+            subValue: `Today: +${stats?.newUsersToday || 0}`,
+            icon: '👥',
+            color: 'text-blue-600'
+        },
+        {
+            label: 'Blocked Users',
+            value: stats?.totalBlockedUsers || 0,
+            subValue: null,
+            icon: '🚫',
+            color: 'text-red-600'
+        },
     ];
 
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">System Overview</h1>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest">Real-time marketplace analytics</p>
+                <h1 className="text-2xl font-bold text-brand tracking-tight">System Overview</h1>
+                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Real-time marketplace analytics</p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {statCards.map((stat, index) => (
-                    <Card key={index} className="border-slate-200">
-                        <CardContent className="py-4">
+                    <Card key={index} className="border-slate-200 bg-white shadow-sm overflow-hidden">
+                        <CardContent className="p-6">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
-                                    <p className="text-2xl font-black text-slate-900 tracking-tight">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                                    <p className={`text-2xl font-black ${stat.color} tracking-tight`}>
                                         {loading ? '...' : stat.value}
                                     </p>
+                                    {stat.subValue && (
+                                        <p className="text-[10px] text-slate-500 mt-1 font-bold">
+                                            {loading ? '...' : stat.subValue}
+                                        </p>
+                                    )}
                                 </div>
                                 <span className="text-2xl">{stat.icon}</span>
                             </div>
-                            {stat.link && stats?.pendingCryptoPayments ? (
-                                <Link href={stat.link} className="flex items-center gap-1 text-[10px] text-amber-600 hover:text-amber-700 mt-3 font-black uppercase tracking-widest transition-colors">
-                                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
-                                    Action Required
-                                </Link>
-                            ) : null}
                         </CardContent>
                     </Card>
                 ))}
             </div>
 
-            {/* Recent Activity */}
-            <div className="grid lg:grid-cols-2 gap-6">
-                {/* Recent Payments */}
-                <Card className="border-slate-800/50">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">Recent Payments</CardTitle>
-                        <Link href="/admin/payments" className="text-[10px] text-cyan-400 hover:underline font-bold">
-                            View all
-                        </Link>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <div className="space-y-4">
-                                {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="animate-pulse h-10 bg-slate-800 rounded-xl" />
-                                ))}
-                            </div>
-                        ) : (recentPayments || []).length === 0 ? (
-                            <p className="text-xs text-slate-600 text-center py-8 italic font-light">No transaction history</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {recentPayments.map((payment) => (
-                                    <div key={payment.id} className="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0 group">
-                                        <div>
-                                            <p className="text-xs font-medium text-white group-hover:text-cyan-400 transition-colors uppercase">{payment.user?.name || 'Unknown'}</p>
-                                            <p className="text-[10px] text-slate-500 font-mono tracking-tighter">{formatDate(payment.createdAt)}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs font-bold text-emerald-400">
-                                                {formatCurrency(payment.amount)}
-                                            </p>
-                                            <div className="mt-1">
-                                                <Badge variant={payment.type === 'PAYSTACK' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0">
-                                                    {payment.type}
-                                                </Badge>
+            {/* Leaderboard */}
+            <Card className="border-slate-200 shadow-sm overflow-hidden">
+                <CardHeader className="border-b border-slate-50 bg-slate-50/50">
+                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Top Customers (Revenue Leaderboard)</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {loading ? (
+                        <div className="p-6 space-y-4">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="animate-pulse h-10 bg-slate-100 rounded-xl" />
+                            ))}
+                        </div>
+                    ) : (stats?.topCustomers || []).length === 0 ? (
+                        <p className="text-xs text-slate-500 text-center py-12 italic font-light">No customer data available</p>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-slate-100 bg-white hover:bg-transparent">
+                                    <TableHead className="text-[10px] uppercase font-black text-slate-400 pl-6 h-12">User</TableHead>
+                                    <TableHead className="text-[10px] uppercase font-black text-slate-400 h-12">Country</TableHead>
+                                    <TableHead className="text-right text-[10px] uppercase font-black text-slate-400 pr-6 h-12">Total Spent</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {stats?.topCustomers.map((customer, index) => (
+                                    <TableRow key={index} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
+                                        <TableCell className="pl-6 py-4">
+                                            <div>
+                                                <p className="text-xs font-bold text-brand">{customer.name}</p>
+                                                <p className="text-[10px] text-slate-400 truncate">{customer.email}</p>
                                             </div>
-                                        </div>
-                                    </div>
+                                        </TableCell>
+                                        <TableCell className="text-xs text-slate-500 font-medium">{customer.country || 'N/A'}</TableCell>
+                                        <TableCell className="text-right font-bold text-xs text-emerald-600 pr-6">
+                                            {formatCurrency(customer.total_spent)}
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Recent Unlocks */}
-                <Card className="border-slate-800/50">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">Latest Unlocks</CardTitle>
-                        <Link href="/admin/users" className="text-[10px] text-cyan-400 hover:underline font-bold">
-                            Manage Users
-                        </Link>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <div className="space-y-4">
-                                {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="animate-pulse h-10 bg-slate-800 rounded-xl" />
-                                ))}
-                            </div>
-                        ) : (recentUnlocks || []).length === 0 ? (
-                            <p className="text-xs text-slate-600 text-center py-8 italic font-light">No recent activity</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {recentUnlocks.map((unlock, index) => (
-                                    <div key={index} className="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0 group">
-                                        <div className="max-w-[180px]">
-                                            <p className="text-xs font-medium text-white group-hover:text-cyan-400 transition-colors truncate uppercase">{unlock.asset.title}</p>
-                                            <p className="text-[10px] text-slate-500">Buyer: {unlock.user.name}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs font-bold text-cyan-400">
-                                                {formatCurrency(unlock.asset.price)}
-                                            </p>
-                                            <p className="text-[10px] text-slate-500 font-mono tracking-tighter mt-1">{formatDate(unlock.grantedAt)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

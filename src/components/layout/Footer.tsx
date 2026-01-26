@@ -8,7 +8,7 @@ export function Footer() {
                     {/* Brand */}
                     <div className="col-span-1 md:col-span-2">
                         <div className="flex items-center space-x-2 mb-4">
-                            <img src="/dylogo.png" alt="DigiMarket" className="h-10 w-auto" />
+                            <img src="/dylogo.png" alt="DY_EMpire" className="h-10 w-auto" />
                         </div>
                         <p className="text-slate-400 max-w-md">
                             Your trusted marketplace for premium digital assets. Buy templates, guides, tools, and more with secure payments.
@@ -57,7 +57,7 @@ export function Footer() {
 
                 <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center">
                     <p className="text-slate-500 text-sm">
-                        © {new Date().getFullYear()} DigiMarket. All rights reserved.
+                        © {new Date().getFullYear()} DY_EMpire. All rights reserved.
                     </p>
                     <div className="flex space-x-6 mt-4 md:mt-0">
                         <span className="text-slate-500 text-sm hover:text-slate-400 cursor-pointer">

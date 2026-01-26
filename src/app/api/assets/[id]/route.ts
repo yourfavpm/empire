@@ -36,6 +36,9 @@ export async function GET(
                 price: toNumber(subcategory.price),
                 description: subcategory.publicDescription,
                 countries: subcategory.countries,
+                logo: subcategory.logo,
+                previewLink: subcategory.previewLink,
+                tutorialLink: subcategory.tutorialLink,
                 availableStock: availableStock,
                 isOutOfStock: availableStock === 0
             }

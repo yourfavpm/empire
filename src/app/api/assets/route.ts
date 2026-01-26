@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
                 price: toNumber(sub.price),
                 description: sub.publicDescription,
                 countries: sub.countries,
+                logo: sub.logo,
                 availableStock: sub.units?.[0]?.count || 0,
                 isOutOfStock: (sub.units?.[0]?.count || 0) === 0
             })),

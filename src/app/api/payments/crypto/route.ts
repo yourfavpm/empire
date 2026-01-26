@@ -62,12 +62,18 @@ export async function POST(request: NextRequest) {
         // Generate unique reference
         const reference = generatePaymentReference();
 
-        // Get crypto address from environment
+        // Get crypto addresses from DB first, then environment
+        const { data: settings } = await supabaseAdmin.from('SystemSettings').select('*');
+        const settingsMap = (settings || []).reduce((acc: any, curr: any) => {
+            acc[curr.key] = curr.value;
+            return acc;
+        }, {});
+
         const cryptoAddresses: Record<string, string> = {
-            'BTC': process.env.CRYPTO_BTC_ADDRESS || '',
-            'ETH': process.env.CRYPTO_ETH_ADDRESS || '',
-            'USDT-TRC20': process.env.CRYPTO_USDT_TRC20_ADDRESS || '',
-            'USDT-ERC20': process.env.CRYPTO_ETH_ADDRESS || '',
+            'BTC': settingsMap['crypto_btc_address'] || process.env.CRYPTO_BTC_ADDRESS || '',
+            'ETH': settingsMap['crypto_eth_address'] || process.env.CRYPTO_ETH_ADDRESS || '',
+            'USDT-TRC20': settingsMap['crypto_usdt_trc20_address'] || process.env.CRYPTO_USDT_TRC20_ADDRESS || '',
+            'USDT-ERC20': settingsMap['crypto_eth_address'] || process.env.CRYPTO_ETH_ADDRESS || '',
         };
 
         // Create pending payment
@@ -108,22 +114,29 @@ export async function POST(request: NextRequest) {
 // GET /api/payments/crypto/info - Get crypto wallet addresses for payment
 export async function GET() {
     try {
+        // Fetch addresses from DB
+        const { data: settings } = await supabaseAdmin.from('SystemSettings').select('*');
+        const settingsMap = (settings || []).reduce((acc: any, curr: any) => {
+            acc[curr.key] = curr.value;
+            return acc;
+        }, {});
+
         // Default crypto networks - always show these options
         const networks = [
             {
                 network: 'BTC',
-                address: process.env.CRYPTO_BTC_ADDRESS || 'Contact admin for address',
-                available: !!process.env.CRYPTO_BTC_ADDRESS
+                address: settingsMap['crypto_btc_address'] || process.env.CRYPTO_BTC_ADDRESS || 'Contact admin for address',
+                available: !!(settingsMap['crypto_btc_address'] || process.env.CRYPTO_BTC_ADDRESS)
             },
             {
                 network: 'ETH',
-                address: process.env.CRYPTO_ETH_ADDRESS || 'Contact admin for address',
-                available: !!process.env.CRYPTO_ETH_ADDRESS
+                address: settingsMap['crypto_eth_address'] || process.env.CRYPTO_ETH_ADDRESS || 'Contact admin for address',
+                available: !!(settingsMap['crypto_eth_address'] || process.env.CRYPTO_ETH_ADDRESS)
             },
             {
                 network: 'USDT-TRC20',
-                address: process.env.CRYPTO_USDT_TRC20_ADDRESS || 'Contact admin for address',
-                available: !!process.env.CRYPTO_USDT_TRC20_ADDRESS
+                address: settingsMap['crypto_usdt_trc20_address'] || process.env.CRYPTO_USDT_TRC20_ADDRESS || 'Contact admin for address',
+                available: !!(settingsMap['crypto_usdt_trc20_address'] || process.env.CRYPTO_USDT_TRC20_ADDRESS)
             },
         ];
 

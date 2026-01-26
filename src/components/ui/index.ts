@@ -5,3 +5,13 @@ export { Badge, StatusBadge } from './Badge';
 export { WhatsAppFAB } from './WhatsAppFAB';
 export { InstructionalModal } from './InstructionalModal';
 export { ThemeToggle } from './ThemeToggle';
+export {
+    Table,
+    TableHeader,
+    TableBody,
+    TableFooter,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableCaption
+} from './Table';

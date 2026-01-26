@@ -121,10 +121,10 @@ export function validateWebhookSignature(
 }
 
 // Get payment status from Paystack status
-export function getPaymentStatus(paystackStatus: string): 'VERIFIED' | 'PENDING' | 'FAILED' {
+export function getPaymentStatus(paystackStatus: string): 'APPROVED' | 'PENDING' | 'FAILED' {
     switch (paystackStatus) {
         case 'success':
-            return 'VERIFIED';
+            return 'APPROVED';
         case 'failed':
         case 'abandoned':
             return 'FAILED';

@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
         }
 
         // If already verified, return success
-        if (payment.status === 'VERIFIED') {
+        if (payment.status === 'APPROVED' || payment.status === 'VERIFIED') {
             return NextResponse.json({
-                message: 'Payment already verified',
-                status: 'VERIFIED',
+                message: 'Payment already approved',
+                status: 'APPROVED',
             });
         }
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         const paystackResponse = await verifyPayment(reference);
         const status = getPaymentStatus(paystackResponse.data.status);
 
-        if (status !== 'VERIFIED') {
+        if (status !== 'APPROVED') {
             await supabaseAdmin
                 .from('Payment')
                 .update({ status })
@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({
-            message: 'Payment verified successfully',
-            status: 'VERIFIED',
+            message: 'Payment approved successfully',
+            status: 'APPROVED',
         });
     } catch (error) {
         console.error('Payment verification error:', error);

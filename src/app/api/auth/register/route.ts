@@ -6,7 +6,7 @@ import { isValidEmail } from '@/lib/utils';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { email, password, name } = body;
+        const { email, password, name, country, whatsappNumber, referrerId } = body;
 
         // Validation
         if (!email || !password || !name) {
@@ -54,7 +54,10 @@ export async function POST(request: NextRequest) {
                 email: email.toLowerCase(),
                 password: hashedPassword,
                 name,
-                role: 'BUYER'
+                country: country || null,
+                whatsappNumber: whatsappNumber || null,
+                role: 'BUYER',
+                referrerId: referrerId || null // Add referrerId
             })
             .select()
             .single();

@@ -71,10 +71,14 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { title, price, publicDescription, countries, categoryId } = body;
+        const { title, price, publicDescription, countries, categoryId, logo, previewLink, tutorialLink } = body;
 
+        // Basic validation
         if (!title || !price || !categoryId) {
-            return NextResponse.json({ error: 'Title, price, and category are required' }, { status: 400 });
+            return NextResponse.json(
+                { error: 'Title, price, and categoryId are required' },
+                { status: 400 }
+            );
         }
 
         const { data: subcategory, error } = await supabaseAdmin
@@ -84,7 +88,11 @@ export async function POST(request: NextRequest) {
                 price,
                 publicDescription: publicDescription || '',
                 countries: countries || [],
-                categoryId
+                categoryId,
+                logo: logo || null,
+                previewLink: previewLink || null,
+                tutorialLink: tutorialLink || null,
+                previewType: body.previewType || 'URL'
             })
             .select()
             .single();

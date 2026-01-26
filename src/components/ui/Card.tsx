@@ -13,8 +13,8 @@ export function Card({ children, className, hover = false }: CardProps) {
     return (
         <div
             className={cn(
-                'bg-slate-900 border border-slate-800 rounded-2xl p-6',
-                hover && 'hover:border-cyan-500/50 hover:shadow-xl transition-all duration-300',
+                'bg-white border border-slate-200 rounded-2xl p-6 shadow-sm',
+                hover && 'hover:border-brand/30 hover:shadow-lg transition-all duration-300',
                 className
             )}
         >
@@ -43,7 +43,7 @@ interface CardTitleProps {
 
 export function CardTitle({ children, className }: CardTitleProps) {
     return (
-        <h3 className={cn('text-lg font-semibold text-white', className)}>
+        <h3 className={cn('text-lg font-black text-brand tracking-tight', className)}>
             {children}
         </h3>
     );
@@ -82,7 +82,7 @@ interface CardFooterProps {
 
 export function CardFooter({ children, className }: CardFooterProps) {
     return (
-        <div className={cn('mt-4 pt-4 border-t border-slate-700/50', className)}>
+        <div className={cn('mt-4 pt-4 border-t border-slate-100', className)}>
             {children}
         </div>
     );

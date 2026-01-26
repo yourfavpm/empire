@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent, Button, Badge, StatusBadge } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface Payment {
@@ -76,25 +76,26 @@ function AdminPaymentsContent() {
     };
 
     return (
-        <div>
-            <div className="flex items-center justify-between mb-8">
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">Payments</h1>
-                    <p className="text-slate-400 mt-1">
-                        Manage payments and approve crypto transactions
+                    <h1 className="text-2xl font-bold text-brand tracking-tight">Payment Transactions</h1>
+                    <p className="text-slate-500 mt-1 text-[10px] uppercase font-black tracking-widest">
+                        Monitor wallet recharges and purchase history across the platform.
                         {pendingCount > 0 && (
-                            <span className="ml-2 text-amber-400">({pendingCount} pending)</span>
+                            <span className="ml-2 text-brand animate-pulse">({pendingCount} PENDING)</span>
                         )}
                     </p>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div className="flex gap-2">
                     <Button
                         variant={typeFilter === '' ? 'primary' : 'outline'}
                         size="sm"
+                        className="h-8 text-[10px] font-black uppercase"
                         onClick={() => setTypeFilter('')}
                     >
                         All Types
@@ -102,6 +103,7 @@ function AdminPaymentsContent() {
                     <Button
                         variant={typeFilter === 'PAYSTACK' ? 'primary' : 'outline'}
                         size="sm"
+                        className="h-8 text-[10px] font-black uppercase"
                         onClick={() => setTypeFilter('PAYSTACK')}
                     >
                         Paystack
@@ -109,6 +111,7 @@ function AdminPaymentsContent() {
                     <Button
                         variant={typeFilter === 'CRYPTO' ? 'primary' : 'outline'}
                         size="sm"
+                        className="h-8 text-[10px] font-black uppercase"
                         onClick={() => setTypeFilter('CRYPTO')}
                     >
                         Crypto
@@ -116,22 +119,25 @@ function AdminPaymentsContent() {
                 </div>
                 <div className="flex gap-2">
                     <Button
-                        variant={statusFilter === '' ? 'secondary' : 'outline'}
+                        variant={statusFilter === '' ? 'primary' : 'outline'}
                         size="sm"
+                        className="h-8 text-[10px] font-black uppercase"
                         onClick={() => setStatusFilter('')}
                     >
                         All Status
                     </Button>
                     <Button
-                        variant={statusFilter === 'PENDING' ? 'secondary' : 'outline'}
+                        variant={statusFilter === 'PENDING' ? 'primary' : 'outline'}
                         size="sm"
+                        className="h-8 text-[10px] font-black uppercase"
                         onClick={() => setStatusFilter('PENDING')}
                     >
                         Pending
                     </Button>
                     <Button
-                        variant={statusFilter === 'VERIFIED' ? 'secondary' : 'outline'}
+                        variant={statusFilter === 'VERIFIED' ? 'primary' : 'outline'}
                         size="sm"
+                        className="h-8 text-[10px] font-black uppercase"
                         onClick={() => setStatusFilter('VERIFIED')}
                     >
                         Verified
@@ -140,80 +146,91 @@ function AdminPaymentsContent() {
             </div>
 
             {/* Payments Table */}
-            <Card>
+            <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-slate-700">
-                                    <th className="text-left py-4 px-6 text-slate-400 font-medium">User</th>
-                                    <th className="text-left py-4 px-6 text-slate-400 font-medium">Amount</th>
-                                    <th className="text-left py-4 px-6 text-slate-400 font-medium">Type</th>
-                                    <th className="text-left py-4 px-6 text-slate-400 font-medium">Status</th>
-                                    <th className="text-left py-4 px-6 text-slate-400 font-medium">Reference</th>
-                                    <th className="text-left py-4 px-6 text-slate-400 font-medium">Date</th>
-                                    <th className="text-right py-4 px-6 text-slate-400 font-medium">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    [...Array(5)].map((_, i) => (
-                                        <tr key={i} className="border-b border-slate-800">
-                                            <td colSpan={7} className="py-4 px-6">
-                                                <div className="h-6 bg-slate-700 rounded animate-pulse" />
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : payments.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="text-center py-12 text-slate-400">
-                                            No payments found
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    payments.map((payment) => (
-                                        <tr key={payment.id} className="border-b border-slate-800 hover:bg-slate-800/30">
-                                            <td className="py-4 px-6">
-                                                <p className="text-white">{payment.user.name}</p>
-                                                <p className="text-sm text-slate-400">{payment.user.email}</p>
-                                            </td>
-                                            <td className="py-4 px-6 text-white font-medium">
+                    <Table>
+                        <TableHeader className="bg-slate-50/50 border-b border-slate-100">
+                            <TableRow className="border-transparent hover:bg-transparent h-12">
+                                <TableHead className="text-slate-400 font-black uppercase text-[10px] tracking-widest pl-6">Transaction</TableHead>
+                                <TableHead className="text-slate-400 font-black uppercase text-[10px] tracking-widest">User</TableHead>
+                                <TableHead className="text-slate-400 font-black uppercase text-[10px] tracking-widest">Amount</TableHead>
+                                <TableHead className="text-slate-400 font-black uppercase text-[10px] tracking-widest">Type</TableHead>
+                                <TableHead className="text-slate-400 font-black uppercase text-[10px] tracking-widest">Status</TableHead>
+                                <TableHead className="text-right text-slate-400 font-black uppercase text-[10px] tracking-widest pr-6">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                [...Array(5)].map((_, i) => (
+                                    <TableRow key={i} className="border-b border-slate-50">
+                                        <TableCell colSpan={6} className="py-6">
+                                            <div className="h-4 bg-slate-100 rounded animate-pulse w-full" />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : payments.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-20 text-slate-400 italic text-xs font-medium">
+                                        No payment records found matching your filters.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                payments.map((payment) => (
+                                    <TableRow key={payment.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                        <TableCell className="pl-6 py-4">
+                                            <div className="flex flex-col">
+                                                <span className="font-mono text-[10px] font-black text-brand uppercase">#{payment.id.slice(-8)}</span>
+                                                <span className="text-[9px] text-slate-400 font-bold uppercase mt-1">Ref: {payment.reference.slice(-8)}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-brand text-xs">{payment.user.name}</span>
+                                                <span className="text-[10px] text-slate-500 truncate max-w-[150px]">{payment.user.email}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="font-black text-brand text-sm">
                                                 {formatCurrency(payment.amount)}
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <Badge variant={payment.type === 'PAYSTACK' ? 'success' : 'warning'}>
+                                            </span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col gap-1">
+                                                <Badge variant="outline" className="text-[10px] font-black uppercase border-slate-200 text-slate-500 w-fit">
                                                     {payment.type}
-                                                    {payment.cryptoNetwork && ` (${payment.cryptoNetwork})`}
                                                 </Badge>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <StatusBadge status={payment.status} type="payment" />
-                                            </td>
-                                            <td className="py-4 px-6 text-slate-400 text-sm">
-                                                <p className="font-mono">{payment.reference}</p>
-                                                {payment.cryptoTxId && (
-                                                    <p className="font-mono text-xs truncate max-w-[150px]" title={payment.cryptoTxId}>
-                                                        TXID: {payment.cryptoTxId}
-                                                    </p>
-                                                )}
-                                            </td>
-                                            <td className="py-4 px-6 text-slate-400">
-                                                {formatDate(payment.createdAt)}
-                                            </td>
-                                            <td className="py-4 px-6 text-right">
+                                                {payment.cryptoNetwork && <span className="text-[9px] text-brand/60 font-bold uppercase">{payment.cryptoNetwork}</span>}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={(payment.status === 'APPROVED' || payment.status === 'VERIFIED' || payment.status === 'COMPLETED') ? 'success' : payment.status === 'PENDING' ? 'outline' : 'error'}
+                                                className={`text-[10px] font-black uppercase ${(payment.status === 'APPROVED' || payment.status === 'VERIFIED' || payment.status === 'COMPLETED') ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                    payment.status === 'PENDING' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                        'bg-red-50 text-red-600 border-red-100'
+                                                    }`}
+                                            >
+                                                {payment.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="pr-6 text-right">
+                                            <div className="flex flex-col items-end gap-2">
+                                                <span className="text-[10px] text-slate-400 font-bold">{formatDate(payment.createdAt)}</span>
                                                 {payment.type === 'CRYPTO' && payment.status === 'PENDING' && (
-                                                    <div className="flex gap-2 justify-end">
+                                                    <div className="flex gap-2">
                                                         <Button
-                                                            variant="primary"
                                                             size="sm"
+                                                            variant="outline"
+                                                            className="h-7 text-[9px] font-black uppercase border-emerald-100 text-emerald-600 hover:bg-emerald-50"
                                                             loading={processing === payment.id}
                                                             onClick={() => handleApprove(payment.id, 'approve')}
                                                         >
                                                             Approve
                                                         </Button>
                                                         <Button
-                                                            variant="danger"
                                                             size="sm"
+                                                            variant="outline"
+                                                            className="h-7 text-[9px] font-black uppercase border-red-100 text-red-600 hover:bg-red-50"
                                                             loading={processing === payment.id}
                                                             onClick={() => handleApprove(payment.id, 'reject')}
                                                         >
@@ -221,13 +238,13 @@ function AdminPaymentsContent() {
                                                         </Button>
                                                     </div>
                                                 )}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
         </div>

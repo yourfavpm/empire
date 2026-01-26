@@ -55,7 +55,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({
             message,
-            status: data.status.toUpperCase(),
+            status: data.status === 'approved' ? 'APPROVED' : data.status.toUpperCase(),
         });
     } catch (error) {
         console.error('Crypto approval error:', error);

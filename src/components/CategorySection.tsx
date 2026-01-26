@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
+import { PromotionalBanner } from '@/components/PromotionalBanner';
 import { formatCurrency } from '@/lib/utils';
 
 interface Asset {
@@ -47,8 +48,11 @@ export function CategorySection({ categories }: CategorySectionProps) {
                     </p>
                 </div>
 
+                {/* Promotional Banner */}
+                <PromotionalBanner />
+
                 {/* Category Grid */}
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8 mt-8">
                     {categories.map(({ category, count }) => (
                         <button
                             key={category}
@@ -90,58 +94,60 @@ export function CategorySection({ categories }: CategorySectionProps) {
                 {/* Expanded Category Assets */}
                 {expandedCategory && (
                     <div className="animate-fadeIn">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                <span className="w-2 h-2 bg-cyan-400 rounded-full" />
+                        {/* Styled Header matching Browse Page */}
+                        <div className="w-full bg-[#5b21b6] px-4 py-2.5 rounded-t-lg shadow-sm border-b-4 border-slate-900 mb-0 flex items-center justify-between">
+                            <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                <span className="w-2 h-2 bg-white rounded-full" />
                                 {expandedCategory}
                             </h3>
                             <Link
                                 href={`/assets?category=${encodeURIComponent(expandedCategory)}`}
-                                className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                                className="text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded transition-colors"
                             >
-                                View all
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                                </svg>
+                                View All →
                             </Link>
                         </div>
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {categories
-                                .find(c => c.category === expandedCategory)
-                                ?.assets.slice(0, 6).map((asset) => (
-                                    <div key={asset.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 h-full transition-all hover:border-cyan-500/30">
-                                        {/* Asset Name */}
-                                        <h4 className="text-white font-semibold mb-2 line-clamp-2">
-                                            {asset.title}
-                                        </h4>
 
-                                        {/* Description */}
-                                        <p className="text-sm text-slate-400 line-clamp-2 mb-4">
-                                            {asset.shortDescription}
-                                        </p>
+                        <div className="bg-slate-900/50 border-x border-b border-slate-800/60 rounded-b-lg p-4">
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {categories
+                                    .find(c => c.category === expandedCategory)
+                                    ?.assets.slice(0, 6).map((asset) => (
+                                        <div key={asset.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 h-full transition-all hover:border-cyan-500/30">
+                                            {/* (Card content remains same...) */}
+                                            {/* Asset Name */}
+                                            <h4 className="text-white font-semibold mb-2 line-clamp-2">
+                                                {asset.title}
+                                            </h4>
 
-                                        {/* Details */}
-                                        <div className="space-y-2 mb-4 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Price</span>
-                                                <span className="text-white font-semibold">{formatCurrency(asset.price)}</span>
+                                            {/* Description */}
+                                            <p className="text-sm text-slate-400 line-clamp-2 mb-4">
+                                                {asset.shortDescription}
+                                            </p>
+
+                                            {/* Details */}
+                                            <div className="space-y-2 mb-4 text-sm">
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Price</span>
+                                                    <span className="text-white font-semibold">{formatCurrency(asset.price)}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">In Stock</span>
+                                                    <span className={`font-medium ${asset.availableStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                        {asset.availableStock} available
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">In Stock</span>
-                                                <span className={`font-medium ${asset.availableStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {asset.availableStock} available
-                                                </span>
-                                            </div>
+
+                                            {/* Buy Now Button */}
+                                            <Link href={`/assets/${asset.id}`}>
+                                                <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white disabled:bg-slate-800 disabled:text-slate-600" disabled={asset.availableStock === 0}>
+                                                    {asset.availableStock > 0 ? 'Buy Now' : 'Sold Out'}
+                                                </Button>
+                                            </Link>
                                         </div>
-
-                                        {/* Buy Now Button */}
-                                        <Link href={`/assets/${asset.id}`}>
-                                            <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white disabled:bg-slate-800 disabled:text-slate-600" disabled={asset.availableStock === 0}>
-                                                {asset.availableStock > 0 ? 'Buy Now' : 'Sold Out'}
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                ))}
+                                    ))}
+                            </div>
                         </div>
                     </div>
                 )}

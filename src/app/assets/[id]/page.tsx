@@ -17,6 +17,9 @@ interface Subcategory {
     countries: string[];
     availableStock: number;
     isOutOfStock: boolean;
+    logo?: string;
+    previewLink?: string;
+    tutorialLink?: string;
 }
 
 export default function SubcategoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -72,127 +75,156 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
     };
 
     if (loading) return (
-        <div className="min-h-screen bg-slate-950 flex flex-col">
+        <div className="min-h-screen bg-white flex flex-col">
             <Navbar />
             <div className="flex-1 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin" />
             </div>
         </div>
     );
 
     if (!subcategory) return (
-        <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
+        <div className="min-h-screen bg-white flex flex-col font-sans">
             <Navbar />
             <div className="flex-1 flex flex-col items-center justify-center p-4">
-                <h1 className="text-xl font-bold text-white mb-2">Inventory Not Found</h1>
-                <p className="text-sm text-slate-500 mb-6 font-medium uppercase tracking-widest">The requested item dose not exist or has been removed.</p>
-                <Button onClick={() => router.push('/assets')} variant="outline" className="text-xs uppercase font-bold px-8">Back to Directory</Button>
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100 italic text-4xl">?</div>
+                <h1 className="text-2xl font-black text-brand mb-2 uppercase tracking-tight">Record Not Found</h1>
+                <p className="text-xs text-slate-400 mb-8 font-black uppercase tracking-widest text-center max-w-xs leading-relaxed">The requested asset has been decommissioned or does not exist in our active directory.</p>
+                <Button onClick={() => router.push('/assets')} className="text-[10px] uppercase font-black px-10 h-11 bg-brand shadow-lg">Return to Marketplace</Button>
             </div>
         </div>
     );
 
     return (
-        <div className="min-h-screen flex flex-col bg-slate-950 font-sans">
+        <div className="min-h-screen flex flex-col bg-white font-sans text-brand">
             <Navbar />
 
-            <main className="flex-1 pt-24 pb-20 px-4">
-                <div className="max-w-4xl mx-auto">
-                    {/* Header Hierarchy */}
-                    <div className="flex items-center gap-2 mb-6">
-                        <Link href="/assets" className="text-[10px] font-bold text-slate-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">Directory</Link>
-                        <span className="text-slate-700 text-[10px]">/</span>
-                        <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">{subcategory.category}</span>
+            <main className="flex-1 pt-20 md:pt-24 pb-20 px-4">
+                <div className="max-w-7xl mx-auto">
+                    {/* Header Breadcrumbs */}
+                    <div className="flex items-center gap-3 mb-6 md:mb-8 overflow-hidden">
+                        <Link href="/assets" className="text-[10px] font-bold text-slate-400 hover:text-brand uppercase tracking-widest transition-colors whitespace-nowrap">Marketplace</Link>
+                        <span className="text-slate-200">/</span>
+                        <span className="text-[10px] font-bold text-brand uppercase tracking-widest truncate">{subcategory.title}</span>
                     </div>
 
-                    <div className="grid lg:grid-cols-5 gap-8">
-                        {/* LEFT: Metadata */}
-                        <div className="lg:col-span-3 space-y-6">
-                            <section>
-                                <h1 className="text-3xl font-bold text-white tracking-tight mb-2 leading-tight">{subcategory.title}</h1>
-                                <div className="flex flex-wrap gap-2 mb-6">
-                                    {subcategory.countries.map(c => (
-                                        <Badge key={c} variant="outline" className="text-[9px] uppercase font-bold border-slate-800 text-slate-400 px-2 py-0">{c}</Badge>
-                                    ))}
-                                    <Badge variant="outline" className="text-[9px] uppercase font-bold border-cyan-500/30 text-cyan-400 px-2 py-0">Global Delivery</Badge>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+                        {/* LEFT: Meta & Description */}
+                        <div className="lg:col-span-8 space-y-8 md:space-y-10">
+                            <section className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
+                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center p-4 shadow-sm flex-shrink-0">
+                                    {subcategory.logo ? (
+                                        <img src={subcategory.logo} alt={subcategory.title} className="w-full h-full object-contain" />
+                                    ) : (
+                                        <span className="text-3xl md:text-4xl text-slate-200">📦</span>
+                                    )}
+                                </div>
+                                <div className="flex-1 space-y-3">
+                                    <div className="flex flex-wrap gap-2">
+                                        <Badge variant="outline" className="text-[9px] font-bold uppercase border-brand/20 text-brand bg-brand/5 px-3">
+                                            {subcategory.category}
+                                        </Badge>
+                                        <Badge variant="outline" className="text-[9px] font-bold uppercase border-slate-200 text-slate-500 bg-white px-3">
+                                            Primary Sector
+                                        </Badge>
+                                    </div>
+                                    <h1 className="text-3xl md:text-4xl font-bold text-brand tracking-tight leading-tight break-words">{subcategory.title}</h1>
+                                    <div className="flex flex-wrap gap-3 items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Secure Protocol</span>
+                                        <span className="text-slate-200">•</span>
+                                        <span className="flex items-center gap-1.5">Instant Provisioning</span>
+                                    </div>
                                 </div>
                             </section>
 
                             <section className="space-y-4">
-                                <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Public Information</h2>
-                                <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl h-full">
-                                    <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
-                                        {subcategory.description || 'Premium asset units for strategic digital operations. Each unit is unique, sell-once, and contains proprietary locked details revealed only after unlocking.'}
+                                <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3">
+                                    Product Specification
+                                    <div className="h-px bg-slate-100 flex-1" />
+                                </h2>
+                                <div className="bg-white border border-slate-100 p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-sm">
+                                    <p className="text-sm text-slate-600 font-medium leading-relaxed whitespace-pre-wrap">
+                                        {subcategory.description || 'Global premium asset. High-priority delivery and verified uptime. Full metadata available post-unlock.'}
                                     </p>
                                 </div>
                             </section>
 
-                            <section className="space-y-4">
-                                <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Security Protocol</h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {[
-                                        { title: 'Single Use', desc: 'Each asset reflects 1 unique entity.' },
-                                        { title: 'Infinite Access', desc: 'Unlock once, keep forever.' },
-                                        { title: 'Privacy First', desc: 'Secure delivery of credentials.' },
-                                        { title: 'Verified', desc: 'Pre-vetted for quality and status.' },
-                                    ].map(item => (
-                                        <div key={item.title} className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-                                            <h4 className="text-[10px] font-bold text-white mb-1 uppercase tracking-widest">{item.title}</h4>
-                                            <p className="text-[11px] text-slate-500 leading-tight">{item.desc}</p>
-                                        </div>
-                                    ))}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="p-6 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-1.5">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Regional Node</p>
+                                    <p className="text-xs font-bold text-brand uppercase tracking-tight">{subcategory.countries?.join(', ') || 'Global Distribution'}</p>
                                 </div>
-                            </section>
+                                <div className="p-6 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-1.5">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Asset Integrity</p>
+                                    <p className="text-xs font-bold text-emerald-600 uppercase tracking-tight">100% Verified & Active</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                {subcategory.previewLink && (
+                                    <Button variant="outline" onClick={() => window.open(subcategory.previewLink, '_blank')} className="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:border-brand hover:text-brand bg-white rounded-xl transition-all">
+                                        View Resource Preview
+                                    </Button>
+                                )}
+                                {subcategory.tutorialLink && (
+                                    <Button variant="outline" onClick={() => window.open(subcategory.tutorialLink, '_blank')} className="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:border-brand hover:text-brand bg-white rounded-xl transition-all">
+                                        Access User Guide
+                                    </Button>
+                                )}
+                            </div>
                         </div>
 
-                        {/* RIGHT: Action Card */}
-                        <div className="lg:col-span-2">
-                            <Card className="sticky top-24 overflow-hidden border-slate-800/80 bg-slate-900/80 backdrop-blur-md">
-                                <div className="p-6 space-y-6">
-                                    {/* Price and Stock */}
-                                    <div className="flex justify-between items-end">
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Price per unit</p>
-                                            <p className="text-3xl font-black text-white">{formatCurrency(subcategory.price)}</p>
+                        {/* RIGHT: Fulfillment Card */}
+                        <div className="lg:col-span-4">
+                            <Card className="sticky top-24 overflow-hidden border-slate-100 shadow-xl bg-white rounded-3xl">
+                                <div className="bg-brand py-2.5 px-6">
+                                    <p className="text-[9px] font-bold text-white uppercase tracking-widest text-center">Checkout Terminal</p>
+                                </div>
+                                <div className="p-6 md:p-8 space-y-8">
+                                    <div className="flex justify-between items-start">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pricing</p>
+                                            <p className="text-3xl md:text-4xl font-bold text-brand tracking-tight">{formatCurrency(subcategory.price)}</p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status</p>
-                                            <Badge variant={subcategory.isOutOfStock ? 'error' : 'success'} className="text-[9px] font-bold px-2 py-0">
-                                                {subcategory.isOutOfStock ? 'Sold Out' : `${subcategory.availableStock} Available`}
+                                        <div className="text-right space-y-2">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stock</p>
+                                            <Badge variant={subcategory.isOutOfStock ? 'error' : 'success'} className="px-3 py-1 font-bold uppercase text-[8px] tracking-tight">
+                                                {subcategory.isOutOfStock ? 'Depleted' : `${subcategory.availableStock} Units`}
                                             </Badge>
                                         </div>
                                     </div>
 
-                                    {/* Interaction */}
-                                    <div className="space-y-4">
-                                        {!subcategory.isOutOfStock && (
-                                            <div className="grid grid-cols-3 items-center gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
-                                                <button
-                                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                                    className="h-10 text-xl font-bold text-slate-500 hover:text-white transition-colors"
-                                                >-</button>
-                                                <div className="text-center">
-                                                    <p className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Qty</p>
-                                                    <p className="text-sm font-bold text-white">{quantity}</p>
+                                    {!subcategory.isOutOfStock && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between p-1.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center text-brand font-bold hover:bg-white rounded-xl transition-all">-</button>
+                                                <div className="text-center px-4">
+                                                    <span className="text-sm font-bold text-brand">{quantity}</span>
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">UNITS</p>
                                                 </div>
-                                                <button
-                                                    onClick={() => setQuantity(Math.min(subcategory.availableStock, quantity + 1))}
-                                                    className="h-10 text-xl font-bold text-slate-500 hover:text-white transition-colors"
-                                                >+</button>
+                                                <button onClick={() => setQuantity(Math.min(subcategory.availableStock, quantity + 1))} className="w-10 h-10 flex items-center justify-center text-brand font-bold hover:bg-white rounded-xl transition-all">+</button>
                                             </div>
-                                        )}
 
-                                        <Button
-                                            onClick={handlePurchase}
-                                            disabled={subcategory.isOutOfStock || purchasing}
-                                            className="w-full h-14 bg-cyan-600 hover:bg-cyan-700 text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-cyan-900/20 disabled:bg-slate-800 disabled:text-slate-600"
-                                        >
-                                            {purchasing ? 'Processing...' : subcategory.isOutOfStock ? 'Subcategory Sold Out' : 'Unlock Inventory Now'}
-                                        </Button>
-                                    </div>
+                                            <Button
+                                                onClick={handlePurchase}
+                                                disabled={subcategory.isOutOfStock || purchasing}
+                                                className="w-full h-15 bg-brand hover:bg-brand-dark text-white font-bold text-[10px] md:text-[11px] uppercase tracking-widest shadow-lg shadow-brand/10 transition-all active:scale-[0.98] rounded-xl"
+                                            >
+                                                {purchasing ? 'Encrypting Order...' : 'Authorize Unlock'}
+                                            </Button>
+                                        </div>
+                                    )}
 
-                                    <div className="pt-4 border-t border-slate-800">
-                                        <p className="text-[10px] text-slate-500 text-center leading-relaxed font-medium italic">
-                                            Transaction will be debited from your wallet balance. Unlocked units appear instantly in your dashboard.
+                                    {subcategory.isOutOfStock && (
+                                        <div className="bg-red-50 border border-red-100 p-5 rounded-2xl text-center">
+                                            <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1.5">Stock Exhausted</p>
+                                            <p className="text-[11px] text-red-500 font-medium">Please verify again later or browse other active sectors.</p>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-6 border-t border-slate-50 text-center">
+                                        <p className="text-[10px] text-slate-400 font-bold italic leading-relaxed px-2">
+                                            Balances are settled via secure wallet authentication. Check your dashboard for unlocked credentials.
                                         </p>
                                     </div>
                                 </div>

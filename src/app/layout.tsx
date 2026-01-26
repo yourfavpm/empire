@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-const inter = Inter({ subsets: ["latin"] });
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
+  variable: "--font-poppins",
+});
 
 export const metadata: Metadata = {
-  title: "DigiMarket - Premium Digital Assets Marketplace",
+  title: "DY_EMpire - Premium Digital Assets Marketplace",
   description: "Your trusted marketplace for premium digital assets. Buy templates, guides, tools, and more with secure payments.",
   keywords: "digital assets, marketplace, templates, guides, Nigeria, Paystack, crypto",
 };
+
+import { CrossPromoBanner } from "@/components/CrossPromoBanner";
 
 export default function RootLayout({
   children,
@@ -18,29 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('dy_empire_theme');
-                  var resolvedTheme = theme;
-                  if (!theme || theme === 'system') {
-                    resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  }
-                  document.documentElement.classList.add(resolvedTheme);
-                } catch (e) {
-                  document.documentElement.classList.add('dark');
-                }
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body className={`${inter.className} antialiased transition-colors duration-300`}>
+      <body className={`${poppins.className} bg-white text-brand antialiased`}>
         <Providers>
           {children}
+          <CrossPromoBanner />
         </Providers>
       </body>
     </html>

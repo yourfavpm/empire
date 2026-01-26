@@ -49,18 +49,39 @@ export async function GET() {
             });
         }
 
-        // Sort transactions descending (Supabase might not guarantee order on related selection without complex syntax)
-        const sortedTransactions = (wallet.transactions || []).sort((a: any, b: any) =>
+        // Fetch pending crypto payments
+        const { data: pendingPayments } = await supabaseAdmin
+            .from('Payment')
+            .select('*')
+            .eq('userId', session.user.id)
+            .eq('status', 'PENDING');
+
+        // Transform and merge
+        const pendingTxs = (pendingPayments || []).map((p: any) => ({
+            id: p.id,
+            type: 'CREDIT',
+            amount: toNumber(p.amount),
+            description: `Crypto Deposit (${p.cryptoNetwork} - Pending)`,
+            status: 'PENDING',
+            balanceAfter: toNumber(wallet.balance), // visual placeholder
+            createdAt: p.createdAt
+        }));
+
+        const existingTxs = (wallet.transactions || []).map((tx: any) => ({
+            ...tx,
+            amount: toNumber(tx.amount),
+            balanceAfter: toNumber(tx.balanceAfter),
+            status: 'COMPLETED'
+        }));
+
+        // Sort combined transactions descending
+        const allTransactions = [...pendingTxs, ...existingTxs].sort((a: any, b: any) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ).slice(0, 20);
+        ).slice(0, 50);
 
         return NextResponse.json({
             balance: toNumber(wallet.balance),
-            transactions: sortedTransactions.map((tx: any) => ({
-                ...tx,
-                amount: toNumber(tx.amount),
-                balanceAfter: toNumber(tx.balanceAfter),
-            })),
+            transactions: allTransactions,
             wallet: {
                 id: wallet.id,
                 createdAt: wallet.createdAt,
