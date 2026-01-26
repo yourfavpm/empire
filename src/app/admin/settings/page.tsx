@@ -16,8 +16,13 @@ export default function AdminSettingsPage() {
     const [ethAddress, setEthAddress] = useState('');
     const [usdtTrc20Address, setUsdtTrc20Address] = useState('');
 
+    // Banner states
+    const [banners, setBanners] = useState<any[]>([]);
+    const [newBanner, setNewBanner] = useState({ content: '', link: '', active: true });
+
     useEffect(() => {
         fetchSettings();
+        fetchBanners();
     }, []);
 
     const fetchSettings = async () => {
@@ -35,6 +40,18 @@ export default function AdminSettingsPage() {
             console.error('Failed to fetch settings:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchBanners = async () => {
+        try {
+            const res = await fetch('/api/admin/banners');
+            if (res.ok) {
+                const data = await res.json();
+                setBanners(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch banners:', error);
         }
     };
 
@@ -56,6 +73,44 @@ export default function AdminSettingsPage() {
             console.error(error);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleAddBanner = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newBanner.content) return;
+
+        setSaving(true);
+        try {
+            const res = await fetch('/api/admin/banners', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newBanner),
+            });
+
+            if (res.ok) {
+                setNewBanner({ content: '', link: '', active: true });
+                fetchBanners();
+                alert('Banner added successfully');
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteBanner = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this banner?')) return;
+
+        try {
+            const res = await fetch(`/api/admin/banners?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                fetchBanners();
+                alert('Banner deleted');
+            }
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -84,7 +139,7 @@ export default function AdminSettingsPage() {
                 <p className="text-[10px] text-slate-500 mt-1 uppercase font-black tracking-widest">Global platform configuration & management</p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 items-start">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                 {/* Referral Settings */}
                 <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
                     <CardHeader className="border-b border-slate-50 bg-slate-50/50">
@@ -158,6 +213,82 @@ export default function AdminSettingsPage() {
                         </form>
                     </CardContent>
                 </Card>
+
+                {/* Banner Management */}
+                <div className="space-y-6">
+                    <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
+                        <CardHeader className="border-b border-slate-50 bg-slate-50/50">
+                            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Add Homepage Banner</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <form onSubmit={handleAddBanner} className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] uppercase font-black text-slate-400 mb-1.5 block tracking-widest">Image URL</label>
+                                    <Input
+                                        value={newBanner.content}
+                                        onChange={e => setNewBanner({ ...newBanner, content: e.target.value })}
+                                        className="h-10 bg-white border-slate-300 font-black text-brand text-xs"
+                                        placeholder="https://example.com/image.jpg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] uppercase font-black text-slate-400 mb-1.5 block tracking-widest">Link (Optional)</label>
+                                    <Input
+                                        value={newBanner.link}
+                                        onChange={e => setNewBanner({ ...newBanner, link: e.target.value })}
+                                        className="h-10 bg-white border-slate-300 font-black text-brand text-xs"
+                                        placeholder="/assets"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={newBanner.active}
+                                        onChange={e => setNewBanner({ ...newBanner, active: e.target.checked })}
+                                        className="w-4 h-4 rounded border-slate-300"
+                                    />
+                                    <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Active</label>
+                                </div>
+                                <Button disabled={saving} type="submit" className="w-full bg-brand hover:bg-brand-light text-white font-black text-[10px] uppercase tracking-widest h-10 shadow-lg shadow-brand/20 transition-all">
+                                    {saving ? 'Adding Banner...' : 'Add Banner'}
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
+                        <CardHeader className="border-b border-slate-50 bg-slate-50/50">
+                            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Active Banners</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                            <div className="space-y-4">
+                                {banners.length === 0 ? (
+                                    <p className="text-[10px] text-slate-400 text-center py-4 uppercase font-black tracking-widest">No banners configured</p>
+                                ) : (
+                                    banners.map((banner) => (
+                                        <div key={banner.id} className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100 group relative">
+                                            <div className="w-16 h-16 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0">
+                                                <img src={banner.content} className="w-full h-full object-cover" alt="Banner" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[9px] font-black text-brand uppercase truncate tracking-tight">{banner.link || 'No Link'}</p>
+                                                <p className={`text-[8px] font-black uppercase mt-1 ${banner.active ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                                    {banner.active ? 'Visible' : 'Inactive'}
+                                                </p>
+                                                <button
+                                                    onClick={() => handleDeleteBanner(banner.id)}
+                                                    className="mt-2 text-[8px] font-black uppercase text-red-500 hover:underline"
+                                                >
+                                                    Remove Banner
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     );
