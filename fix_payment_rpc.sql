@@ -1,26 +1,29 @@
 -- UPDATED SCHEMA & RPCS FOR PAYMENT SYSTEM
 -- Run this in Supabase SQL Editor
 
--- DROP OLD FUNCTIONS FIRST (Needed when changing return types or arguments)
+-- DROP OLD FUNCTIONS FIRST
 DROP FUNCTION IF EXISTS handle_payment_success(TEXT, NUMERIC);
 DROP FUNCTION IF EXISTS handle_crypto_approval(TEXT);
 DROP FUNCTION IF EXISTS handle_crypto_approval(UUID, TEXT, TEXT);
+DROP FUNCTION IF EXISTS handle_crypto_approval(TEXT, TEXT, TEXT);
 
--- 1. Ensure handle_payment_success uses APPROVED status
+-- 1. Correct handle_payment_success
 CREATE OR REPLACE FUNCTION handle_payment_success(p_reference TEXT, p_amount NUMERIC)
 RETURNS JSONB AS $$
 DECLARE
     v_user_id TEXT;
 BEGIN
-    UPDATE "Payment" SET status = 'APPROVED', "updatedAt" = NOW()
-    WHERE reference = p_reference AND status NOT IN ('APPROVED', 'VERIFIED')
+    UPDATE "Payment" SET status = 'APPROVED'::"PaymentStatus", "updatedAt" = NOW()
+    WHERE reference = p_reference AND status NOT IN ('APPROVED'::"PaymentStatus", 'VERIFIED'::"PaymentStatus")
     RETURNING "userId" INTO v_user_id;
 
     IF FOUND THEN
         UPDATE "Wallet" SET balance = balance + p_amount, "updatedAt" = NOW()
         WHERE "userId" = v_user_id;
 
-        INSERT INTO "Transaction" ("userId", amount, type, status, description)
+        -- Using lowercase 'userid' if "userId" failed previously, 
+        -- but testing unquoted userid which is most robust in Postgres
+        INSERT INTO "Transaction" (userid, amount, type, status, description)
         VALUES (v_user_id, p_amount, 'CREDIT', 'COMPLETED', 'Wallet Funding (Paystack)');
         
         RETURN jsonb_build_object('status', 'success', 'userId', v_user_id);
@@ -30,11 +33,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Fixed handle_crypto_approval with correct signatures and behavior
+-- 2. Fixed handle_crypto_approval
 CREATE OR REPLACE FUNCTION handle_crypto_approval(
-    p_payment_id UUID,
+    p_payment_id TEXT,
     p_action TEXT,
-    p_admin_note TEXT
+    p_admin_note TEXT DEFAULT NULL
 )
 RETURNS JSONB AS $$
 DECLARE
@@ -43,14 +46,14 @@ DECLARE
     v_user_id TEXT;
 BEGIN
     -- Fetch Payment
-    SELECT * INTO v_payment FROM "Payment" WHERE id = p_payment_id::TEXT;
+    SELECT * INTO v_payment FROM "Payment" WHERE id = p_payment_id;
     
     IF NOT FOUND THEN
-        RETURN jsonb_build_object('status', 'error', 'message', 'Payment not found');
+        RETURN jsonb_build_object('status', 'error', 'message', 'Payment not found (ID: ' || p_payment_id || ')');
     END IF;
 
-    IF v_payment.status != 'PENDING' THEN
-        RETURN jsonb_build_object('status', 'already_processed');
+    IF v_payment.status != 'PENDING'::"PaymentStatus" THEN
+        RETURN jsonb_build_object('status', 'already_processed', 'current_status', v_payment.status);
     END IF;
 
     v_user_id := v_payment."userId";
@@ -60,10 +63,10 @@ BEGIN
         
         -- Update Payment Status
         UPDATE "Payment"
-        SET status = v_new_status,
+        SET status = v_new_status::"PaymentStatus",
             "adminNote" = p_admin_note,
             "updatedAt" = now()
-        WHERE id = p_payment_id::TEXT;
+        WHERE id = p_payment_id;
 
         -- Credit Wallet
         UPDATE "Wallet"
@@ -72,22 +75,19 @@ BEGIN
         WHERE "userId" = v_user_id;
 
         -- Create Transaction Record (Credit)
+        -- Using unquoted column names for maximum compatibility
         INSERT INTO "Transaction" (
-            "userId",
+            userid,
             type,
             amount,
             description,
-            status,
-            "createdAt",
-            "updatedAt"
+            status
         ) VALUES (
             v_user_id,
             'CREDIT',
             v_payment.amount,
             'Crypto Deposit Approved (' || v_payment.reference || ')',
-            'COMPLETED',
-            now(),
-            now()
+            'COMPLETED'
         );
 
         RETURN jsonb_build_object('status', 'approved');
@@ -97,14 +97,14 @@ BEGIN
 
         -- Update Payment Status
         UPDATE "Payment"
-        SET status = v_new_status,
+        SET status = v_new_status::"PaymentStatus",
             "adminNote" = p_admin_note,
             "updatedAt" = now()
-        WHERE id = p_payment_id::TEXT;
+        WHERE id = p_payment_id;
         
         RETURN jsonb_build_object('status', 'rejected');
     ELSE
-         RETURN jsonb_build_object('status', 'error', 'message', 'Invalid action');
+         RETURN jsonb_build_object('status', 'error', 'message', 'Invalid action: ' || p_action);
     END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -19,10 +19,10 @@ export async function GET() {
 
         // Map to frontend expected format + new daily stats
         const payload = {
-            totalUsers: Number(metrics.totalusers || metrics.totalUsers || 0),
-            totalBlockedUsers: Number(metrics.totalblockedusers || metrics.totalBlockedUsers || 0),
-            totalRevenue: Number(metrics.totalrevenue || metrics.totalRevenue || 0),
-            totalWalletRecharge: Number(metrics.totalwalletrecharge || metrics.totalWalletRecharge || 0),
+            totalUsers: Number(metrics.total_users || 0),
+            totalBlockedUsers: Number(metrics.total_blocked_users || 0),
+            totalRevenue: Number(metrics.total_revenue || 0),
+            totalWalletRecharge: Number(metrics.total_wallet_recharge || 0),
             newUsersToday: Number(metrics.new_users_today || 0),
             rechargedToday: Number(metrics.recharged_today || 0),
             revenueToday: Number(metrics.revenue_today || 0),

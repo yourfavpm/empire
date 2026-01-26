@@ -67,9 +67,13 @@ function AdminPaymentsContent() {
 
             if (response.ok) {
                 fetchPayments();
+            } else {
+                const err = await response.json();
+                alert(`Error: ${err.error || 'Failed to process payment'}`);
             }
         } catch (error) {
             console.error('Failed to process payment:', error);
+            alert('An unexpected error occurred while processing the payment.');
         } finally {
             setProcessing(null);
         }
