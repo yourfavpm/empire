@@ -1,21 +1,20 @@
-import Link from 'next/link';
 import { Navbar, Footer } from '@/components/layout';
-import { Button, WhatsAppFAB } from '@/components/ui';
+import { WhatsAppFAB } from '@/components/ui';
 import { supabaseAdmin } from '@/lib/supabase';
-import { formatCurrency, toNumber } from '@/lib/utils';
 import { PromotionalBanner } from '@/components/PromotionalBanner';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 // New Homepage Components
 import { SlidingBanner } from "@/components/home/SlidingBanner";
 import { TrustTicker } from "@/components/home/TrustTicker";
 import { HowItWorks } from "@/components/home/HowItWorks";
-import { CategoryList } from "@/components/home/CategoryList";
 import { ReviewSection } from "@/components/home/ReviewSection";
 
 // Fetch banners
 async function getBanners() {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data } = await supabaseAdmin
       .from('Banner')
       .select('*')
       .eq('active', true)
@@ -27,49 +26,18 @@ async function getBanners() {
   }
 }
 
-// Fetch all unique categories with their subcategories and stock
-async function getAllCategories() {
-  try {
-    const { data: categories, error } = await supabaseAdmin
-      .from('Category')
-      .select(`
-        id,
-        name,
-        subcategories:Subcategory(
-          id,
-          title,
-          price,
-          publicDescription,
-          units:AssetUnit(count)
-        )
-      `)
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-
-    return (categories || []).map(cat => ({
-      category: cat.name,
-      count: (cat.subcategories as any[]).length,
-      assets: (cat.subcategories as any[]).map(sub => ({
-        id: sub.id,
-        title: sub.title,
-        category: cat.name,
-        price: toNumber(sub.price),
-        shortDescription: sub.publicDescription,
-        availableStock: sub.units ? (sub.units as any[]).length : 0
-      })),
-    }));
-  } catch (err) {
-    console.error('Home page fetch error:', err);
-    return [];
-  }
-}
-
 export default async function HomePage() {
-  const [categories, dbBanners] = await Promise.all([
-    getAllCategories(),
-    getBanners()
-  ]);
+  const session = await auth();
+
+    if (session?.user) {
+        if (session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN') {
+             redirect('/admin');
+        } else {
+             redirect('/buyer');
+        }
+    }
+
+  const dbBanners = await getBanners();
 
   // Merge DB banners with local ones from public folder
   const localBanners = [
@@ -108,9 +76,6 @@ export default async function HomePage() {
 
         {/* Section 3: How It Works */}
         <HowItWorks />
-
-        {/* Section 4: Categories & Subcategories */}
-        <CategoryList categories={categories} />
 
         {/* Optional Interstitial Banner */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">

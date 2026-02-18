@@ -1,6 +1,6 @@
 'use client';
 
-import { cn, getStatusColor, getPaymentStatusColor } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface BadgeProps {
     children: React.ReactNode;

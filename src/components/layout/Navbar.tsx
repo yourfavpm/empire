@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui';
 import { useState } from 'react';
@@ -23,15 +24,13 @@ export function Navbar() {
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
                         <Link href="/" className="flex items-center space-x-2">
-                            <span className="text-xl font-black text-white tracking-tighter">
-                                DY_EMpire
-                            </span>
+                             <Image src="/dylogo.png" alt="DY Empire" width={40} height={40} className="h-10 w-auto object-contain" />
                         </Link>
 
                         {/* Desktop Navigation */}
                         <div className="hidden md:flex items-center space-x-8">
                             <Link href="/assets" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
-                                Browse Assets
+                                Browse Logs
                             </Link>
 
                             {status === 'authenticated' ? (

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function Footer() {
     return (
@@ -8,7 +9,7 @@ export function Footer() {
                     {/* Brand */}
                     <div className="col-span-1 md:col-span-2">
                         <div className="flex items-center space-x-2 mb-4">
-                            <img src="/dylogo.png" alt="DY_EMpire" className="h-10 w-auto" />
+                            <Image src="/dylogo.png" alt="DY_EMpire" width={40} height={40} className="h-10 w-auto" />
                         </div>
                         <p className="text-slate-400 max-w-md">
                             Your trusted marketplace for premium digital assets. Buy templates, guides, tools, and more with secure payments.

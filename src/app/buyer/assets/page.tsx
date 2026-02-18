@@ -53,11 +53,18 @@ export default function BuyerAssetsPage() {
                         <h1 className="text-2xl md:text-3xl font-bold text-brand tracking-tight">Purchased Assets</h1>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Operational records of your unique digital items</p>
                     </div>
-                    <Link href="/assets" className="w-full md:w-auto">
-                        <Button className="w-full md:w-auto bg-brand hover:bg-brand-dark text-white text-[10px] font-bold uppercase tracking-widest px-8 h-11 shadow-lg shadow-brand/10 transition-all">
-                            Explore Marketplace
-                        </Button>
-                    </Link>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                        <Link href="/buyer" className="w-full md:w-auto">
+                            <Button variant="outline" className="w-full md:w-auto text-[10px] font-bold uppercase tracking-widest px-6 h-11 border-slate-200 hover:border-brand hover:text-brand bg-white transition-all">
+                                Back to Dashboard
+                            </Button>
+                        </Link>
+                        <Link href="/assets" className="w-full md:w-auto">
+                            <Button className="w-full md:w-auto bg-brand hover:bg-brand-dark text-white text-[10px] font-bold uppercase tracking-widest px-8 h-11 shadow-lg shadow-brand/10 transition-all">
+                                Explore Marketplace
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
 
                 {loading ? (

@@ -61,18 +61,22 @@ export async function GET() {
             id: p.id,
             type: 'CREDIT',
             amount: toNumber(p.amount),
-            description: `Crypto Deposit (${p.cryptoNetwork} - Pending)`,
+            description: p.type === 'PAYSTACK'
+                ? 'Wallet Funding (Paystack - Pending)'
+                : `Crypto Deposit (${p.cryptoNetwork || 'Unknown'} - Pending)`,
             status: 'PENDING',
             balanceAfter: toNumber(wallet.balance), // visual placeholder
             createdAt: p.createdAt
         }));
 
-        const existingTxs = (wallet.transactions || []).map((tx: any) => ({
-            ...tx,
-            amount: toNumber(tx.amount),
-            balanceAfter: toNumber(tx.balanceAfter),
-            status: 'COMPLETED'
-        }));
+        const existingTxs = (wallet.transactions || [])
+            .filter((tx: any) => !tx.description?.startsWith('Admin Adjustment'))
+            .map((tx: any) => ({
+                ...tx,
+                amount: toNumber(tx.amount),
+                balanceAfter: toNumber(tx.balanceAfter),
+                status: 'COMPLETED'
+            }));
 
         // Sort combined transactions descending
         const allTransactions = [...pendingTxs, ...existingTxs].sort((a: any, b: any) =>

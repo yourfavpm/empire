@@ -1,12 +1,20 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input } from '@/components/ui';
-import { formatCurrency } from '@/lib/utils';
+import Image from 'next/image';
+
+interface Banner {
+    id: string | number;
+    content: string;
+    link: string;
+    active: boolean;
+}
+
+
 
 export default function AdminSettingsPage() {
-    const [settings, setSettings] = useState<any>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -17,21 +25,15 @@ export default function AdminSettingsPage() {
     const [usdtTrc20Address, setUsdtTrc20Address] = useState('');
 
     // Banner states
-    const [banners, setBanners] = useState<any[]>([]);
-    const [newBanner, setNewBanner] = useState({ content: '', link: '', active: true });
+    const [banners, setBanners] = useState<Banner[]>([]);
+    const [newBanner, setNewBanner] = useState<{content: string; link: string; active: boolean}>({ content: '', link: '', active: true });
     const [uploading, setUploading] = useState(false);
 
-    useEffect(() => {
-        fetchSettings();
-        fetchBanners();
-    }, []);
-
-    const fetchSettings = async () => {
+    const fetchSettings = useCallback(async () => {
         try {
             const res = await fetch('/api/admin/settings');
             if (res.ok) {
                 const data = await res.json();
-                setSettings(data);
                 setReferralBonus(data.referral_bonus_amount || '0');
                 setBtcAddress(data.crypto_btc_address || '');
                 setEthAddress(data.crypto_eth_address || '');
@@ -42,9 +44,9 @@ export default function AdminSettingsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const fetchBanners = async () => {
+    const fetchBanners = useCallback(async () => {
         try {
             const res = await fetch('/api/admin/banners');
             if (res.ok) {
@@ -54,7 +56,12 @@ export default function AdminSettingsPage() {
         } catch (error) {
             console.error('Failed to fetch banners:', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchSettings();
+        fetchBanners();
+    }, [fetchSettings, fetchBanners]);
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -131,7 +138,7 @@ export default function AdminSettingsPage() {
         }
     };
 
-    const handleDeleteBanner = async (id: string) => {
+    const handleDeleteBanner = async (id: string | number) => {
         if (!confirm('Are you sure you want to delete this banner?')) return;
 
         try {
@@ -194,7 +201,7 @@ export default function AdminSettingsPage() {
                                         </Button>
                                     </div>
                                     <p className="text-[10px] text-slate-500 mt-4 leading-relaxed font-medium">
-                                        This capital will be automatically injected into the referrer's wallet upon a successful acquisition (referee's first verified deposit).
+                                        This capital will be automatically injected into the referrer&apos;s wallet upon a successful acquisition (referee&apos;s first verified deposit).
                                     </p>
                                 </div>
                             </div>
@@ -319,8 +326,13 @@ export default function AdminSettingsPage() {
                                 ) : (
                                     banners.map((banner) => (
                                         <div key={banner.id} className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100 group relative">
-                                            <div className="w-16 h-16 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0">
-                                                <img src={banner.content} className="w-full h-full object-cover" alt="Banner" />
+                                            <div className="w-16 h-16 bg-slate-200 rounded-lg overflow-hidden shrink-0 relative">
+                                                <Image 
+                                                    src={banner.content} 
+                                                    fill 
+                                                    className="object-cover" 
+                                                    alt="Banner" 
+                                                />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-[9px] font-black text-brand uppercase truncate tracking-tight">{banner.link || 'No Link'}</p>

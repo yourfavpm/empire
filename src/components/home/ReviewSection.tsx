@@ -40,7 +40,7 @@ export function ReviewSection() {
                                 ))}
                             </div>
                             <p className="text-slate-600 text-sm mb-6 leading-relaxed">
-                                "{review.text}"
+                                &quot;{review.text}&quot;
                             </p>
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-brand">

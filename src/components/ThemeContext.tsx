@@ -32,6 +32,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
         if (stored && ['light', 'dark', 'system'].includes(stored)) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setThemeState(stored);
         }
         setMounted(true);
@@ -42,6 +43,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
 
         const resolved = theme === 'system' ? getSystemTheme() : theme;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResolvedTheme(resolved);
 
         // Apply theme class to document

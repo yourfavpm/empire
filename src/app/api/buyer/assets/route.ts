@@ -1,7 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { toNumber } from '@/lib/utils';
+
+interface Subcategory {
+    title: string;
+    price: number;
+    category: { name: string };
+}
+interface AssetUnit {
+    lockedDescription: string;
+    subcategory: Subcategory;
+}
+interface AccessRecord {
+    assetUnitId: string;
+    assetUnit: AssetUnit;
+    orderId: string;
+    grantedAt: string;
+}
 
 // GET /api/buyer/assets - Get buyer's unlocked asset units
 export async function GET() {
@@ -35,7 +51,7 @@ export async function GET() {
         }
 
         return NextResponse.json({
-            assets: accessRecords.map((access: any) => ({
+            assets: (accessRecords as unknown as AccessRecord[]).map((access) => ({
                 id: access.assetUnitId,
                 title: access.assetUnit.subcategory.title,
                 category: access.assetUnit.subcategory.category.name,

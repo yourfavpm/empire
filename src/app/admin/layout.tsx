@@ -16,13 +16,24 @@ const navigation = [
     { name: 'Settings', href: '/admin/settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z' },
 ];
 
+interface NavigationItem {
+    name: string;
+    href: string;
+    icon: string;
+}
+
+interface User {
+    name?: string | null;
+    email?: string | null;
+}
+
 interface NavContentProps {
-    navigation: any[];
+    navigation: NavigationItem[];
     pathname: string;
     isCollapsed: boolean;
     mobile?: boolean;
     onClose?: () => void;
-    user: any;
+    user: User | undefined;
 }
 
 function NavContent({ navigation, pathname, isCollapsed, mobile, onClose, user }: NavContentProps) {
@@ -34,7 +45,7 @@ function NavContent({ navigation, pathname, isCollapsed, mobile, onClose, user }
                 isCollapsed && !mobile ? "px-0 justify-center" : "px-8"
             )}>
                 <Link href="/admin" onClick={onClose} className="flex items-center space-x-3 group">
-                    <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-black/20 transition-transform flex-shrink-0">
+                    <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-black/20 transition-transform shrink-0">
                         <span className="text-brand font-black text-xs">E</span>
                     </div>
                     {(!isCollapsed || mobile) && (
@@ -71,7 +82,7 @@ function NavContent({ navigation, pathname, isCollapsed, mobile, onClose, user }
                                             : 'text-white hover:bg-white/10'
                                     )}
                                 >
-                                    <div className={cn("flex items-center justify-center flex-shrink-0", !isCollapsed || mobile ? "mr-3" : "")}>
+                                    <div className={cn("flex items-center justify-center shrink-0", !isCollapsed || mobile ? "mr-3" : "")}>
                                         <svg className={cn("w-5 h-5", isActive ? "text-brand" : "text-white opacity-70 group-hover:opacity-100")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d={item.icon} />
                                         </svg>
@@ -100,7 +111,7 @@ function NavContent({ navigation, pathname, isCollapsed, mobile, onClose, user }
                             "text-white bg-white/5 hover:bg-white/10"
                         )}
                     >
-                        <div className={cn("flex items-center justify-center flex-shrink-0", !isCollapsed || mobile ? "mr-3" : "")}>
+                        <div className={cn("flex items-center justify-center shrink-0", !isCollapsed || mobile ? "mr-3" : "")}>
                             <svg className={cn("w-5 h-5 text-white opacity-70 group-hover:opacity-100 transition-opacity")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
                             </svg>
@@ -113,7 +124,7 @@ function NavContent({ navigation, pathname, isCollapsed, mobile, onClose, user }
             {/* User Profile Summary */}
             <div className={cn("p-6 border-t border-white/10 bg-black/20 transition-all", isCollapsed && !mobile ? "p-4 justify-center" : "p-6")}>
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center font-black text-white text-xs flex-shrink-0 shadow-inner">
+                    <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center font-black text-white text-xs shrink-0 shadow-inner">
                         {user?.name?.charAt(0) || 'A'}
                     </div>
                     {(!isCollapsed || mobile) && (
@@ -155,7 +166,7 @@ export default function AdminLayout({
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
             {/* Mobile Header (Fixed) */}
-            <div className="fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 z-[80] md:hidden shadow-sm">
+            <div className="fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 z-80 md:hidden shadow-sm">
                 <Link href="/admin" className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-brand rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
                         <span className="text-white font-black text-[14px]">E</span>
@@ -176,7 +187,7 @@ export default function AdminLayout({
             {/* Desktop Sidebar (Fixed) */}
             <aside
                 className={cn(
-                    "hidden md:block fixed inset-y-0 left-0 bg-brand z-[100] transition-all duration-300 ease-in-out border-r border-white/5",
+                    "hidden md:block fixed inset-y-0 left-0 bg-brand z-100 transition-all duration-300 ease-in-out border-r border-white/5",
                     isCollapsed ? "w-20" : "w-64"
                 )}
             >
@@ -190,7 +201,7 @@ export default function AdminLayout({
                 {/* Collapse Toggle Handle */}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="absolute -right-3 top-24 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-xl text-brand z-[110] transition-all hover:scale-110 active:scale-95 group"
+                    className="absolute -right-3 top-24 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-xl text-brand z-110 transition-all hover:scale-110 active:scale-95 group"
                 >
                     <svg className={cn("w-3 h-3 transition-transform duration-500", !isCollapsed ? "" : "rotate-180")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
@@ -200,7 +211,7 @@ export default function AdminLayout({
 
             {/* Mobile Sidebar / Drawer (Fixed Overlay) */}
             {isMobileMenuOpen && (
-                <div className="fixed inset-0 z-[120] md:hidden">
+                <div className="fixed inset-0 z-120 md:hidden">
                     <div className="absolute inset-0 bg-brand/60 backdrop-blur-md" onClick={() => setIsMobileMenuOpen(false)} />
                     <aside className="absolute inset-y-0 left-0 w-80 bg-brand shadow-2xl animate-in slide-in-from-left duration-500">
                         <NavContent

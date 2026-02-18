@@ -50,7 +50,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                             return { ...user };
                         }
                         return null;
-                    } catch (e) {
+                    } catch {
                         return null;
                     }
                 }

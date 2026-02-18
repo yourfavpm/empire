@@ -32,6 +32,7 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
 
     useEffect(() => {
         fetchSubcategory();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const fetchSubcategory = async () => {
@@ -39,8 +40,8 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
             const res = await fetch(`/api/assets/${id}`);
             const data = await res.json();
             if (res.ok) setSubcategory(data.subcategory);
-        } catch (error) {
-            console.error('Fetch error:', error);
+        } catch {
+            // console.error('Fetch error:', error);
         } finally {
             setLoading(false);
         }
@@ -67,7 +68,7 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
             } else {
                 toast.error(data.error || 'Failed to complete purchase');
             }
-        } catch (error) {
+        } catch {
             toast.error('Store error. Please try again.');
         } finally {
             setPurchasing(false);
@@ -89,8 +90,8 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
             <div className="flex-1 flex flex-col items-center justify-center p-4">
                 <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100 italic text-4xl">?</div>
                 <h1 className="text-2xl font-black text-brand mb-2 uppercase tracking-tight">Record Not Found</h1>
-                <p className="text-xs text-slate-400 mb-8 font-black uppercase tracking-widest text-center max-w-xs leading-relaxed">The requested asset has been decommissioned or does not exist in our active directory.</p>
-                <Button onClick={() => router.push('/assets')} className="text-[10px] uppercase font-black px-10 h-11 bg-brand shadow-lg">Return to Marketplace</Button>
+                                    <p className="text-xs text-slate-400 mb-8 font-bold uppercase tracking-widest text-center max-w-xs leading-relaxed">The requested log has been decommissioned or does not exist in our active directory.</p>
+                <Button onClick={() => router.push('/assets')} className="text-[10px] uppercase font-bold px-10 h-11 bg-brand shadow-lg">Return to Logs</Button>
             </div>
         </div>
     );
@@ -103,17 +104,18 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
                 <div className="max-w-7xl mx-auto">
                     {/* Header Breadcrumbs */}
                     <div className="flex items-center gap-3 mb-6 md:mb-8 overflow-hidden">
-                        <Link href="/assets" className="text-[10px] font-bold text-slate-400 hover:text-brand uppercase tracking-widest transition-colors whitespace-nowrap">Marketplace</Link>
+                        <Link href="/assets" className="text-[10px] font-bold text-slate-400 hover:text-brand uppercase tracking-widest transition-colors whitespace-nowrap">Logs</Link>
                         <span className="text-slate-200">/</span>
                         <span className="text-[10px] font-bold text-brand uppercase tracking-widest truncate">{subcategory.title}</span>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
                         {/* LEFT: Meta & Description */}
-                        <div className="lg:col-span-8 space-y-8 md:space-y-10">
+                        <div className="col-span-12 space-y-8 md:space-y-10">
                             <section className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
-                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center p-4 shadow-sm flex-shrink-0">
+                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center p-4 shadow-sm shrink-0">
                                     {subcategory.logo ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
                                         <img src={subcategory.logo} alt={subcategory.title} className="w-full h-full object-contain" />
                                     ) : (
                                         <span className="text-3xl md:text-4xl text-slate-200">📦</span>
@@ -128,7 +130,7 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
                                             Primary Sector
                                         </Badge>
                                     </div>
-                                    <h1 className="text-3xl md:text-4xl font-bold text-brand tracking-tight leading-tight break-words">{subcategory.title}</h1>
+                                    <h1 className="text-3xl md:text-4xl font-bold text-brand tracking-tight leading-tight wrap-break-word">{subcategory.title}</h1>
                                     <div className="flex flex-wrap gap-3 items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Secure Protocol</span>
                                         <span className="text-slate-200">•</span>
@@ -149,36 +151,10 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
                                 </div>
                             </section>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="p-6 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-1.5">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Regional Node</p>
-                                    <p className="text-xs font-bold text-brand uppercase tracking-tight">{subcategory.countries?.join(', ') || 'Global Distribution'}</p>
-                                </div>
-                                <div className="p-6 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-1.5">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Asset Integrity</p>
-                                    <p className="text-xs font-bold text-emerald-600 uppercase tracking-tight">100% Verified & Active</p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                {subcategory.previewLink && (
-                                    <Button variant="outline" onClick={() => window.open(subcategory.previewLink, '_blank')} className="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:border-brand hover:text-brand bg-white rounded-xl transition-all">
-                                        View Resource Preview
-                                    </Button>
-                                )}
-                                {subcategory.tutorialLink && (
-                                    <Button variant="outline" onClick={() => window.open(subcategory.tutorialLink, '_blank')} className="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:border-brand hover:text-brand bg-white rounded-xl transition-all">
-                                        Access User Guide
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* RIGHT: Fulfillment Card */}
-                        <div className="lg:col-span-4">
-                            <Card className="sticky top-24 overflow-hidden border-slate-100 shadow-xl bg-white rounded-3xl">
+                            {/* Checkout Card - Moved Here */}
+                            <Card className="overflow-hidden border-slate-100 shadow-xl bg-white rounded-3xl">
                                 <div className="bg-brand py-2.5 px-6">
-                                    <p className="text-[9px] font-bold text-white uppercase tracking-widest text-center">Checkout Terminal</p>
+                                    <p className="text-[9px] font-bold text-white uppercase tracking-widest text-center">Checkout</p>
                                 </div>
                                 <div className="p-6 md:p-8 space-y-8">
                                     <div className="flex justify-between items-start">
@@ -189,7 +165,7 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
                                         <div className="text-right space-y-2">
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stock</p>
                                             <Badge variant={subcategory.isOutOfStock ? 'error' : 'success'} className="px-3 py-1 font-bold uppercase text-[8px] tracking-tight">
-                                                {subcategory.isOutOfStock ? 'Depleted' : `${subcategory.availableStock} Units`}
+                                                {subcategory.isOutOfStock ? 'Out of Stock' : `${subcategory.availableStock} Units`}
                                             </Badge>
                                         </div>
                                     </div>
@@ -210,14 +186,14 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
                                                 disabled={subcategory.isOutOfStock || purchasing}
                                                 className="w-full h-15 bg-brand hover:bg-brand-dark text-white font-bold text-[10px] md:text-[11px] uppercase tracking-widest shadow-lg shadow-brand/10 transition-all active:scale-[0.98] rounded-xl"
                                             >
-                                                {purchasing ? 'Encrypting Order...' : 'Authorize Unlock'}
+                                                {purchasing ? 'Processing Order...' : 'Buy Now'}
                                             </Button>
                                         </div>
                                     )}
 
                                     {subcategory.isOutOfStock && (
                                         <div className="bg-red-50 border border-red-100 p-5 rounded-2xl text-center">
-                                            <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1.5">Stock Exhausted</p>
+                                            <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1.5">Out of Stock</p>
                                             <p className="text-[11px] text-red-500 font-medium">Please verify again later or browse other active sectors.</p>
                                         </div>
                                     )}
@@ -229,6 +205,29 @@ export default function SubcategoryDetailPage({ params }: { params: Promise<{ id
                                     </div>
                                 </div>
                             </Card>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="p-6 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-1.5">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Country</p>
+                                    <p className="text-xs font-bold text-brand uppercase tracking-tight">{subcategory.countries?.join(', ') || 'Global Distribution'}</p>
+                                </div>
+                                <div className="p-6 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-1.5">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Logs Integrity</p>
+                                    <p className="text-xs font-bold text-emerald-600 uppercase tracking-tight">100% Verified & Active</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                {subcategory.previewLink && (
+                                    <Button variant="outline" onClick={() => window.open(subcategory.previewLink, '_blank')} className="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:border-brand hover:text-brand bg-white rounded-xl transition-all">
+                                        View Resource Preview
+                                    </Button>
+                                )}
+                                {subcategory.tutorialLink && (
+                                    <Button variant="outline" onClick={() => window.open(subcategory.tutorialLink, '_blank')} className="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:border-brand hover:text-brand bg-white rounded-xl transition-all">
+                                        Access User Guide
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

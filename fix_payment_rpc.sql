@@ -195,8 +195,8 @@ BEGIN
     VALUES (v_order_id, p_user_id, v_total_cost, NOW());
 
     -- 5. Create Transaction record
-    INSERT INTO "Transaction" ("walletId", amount, type, description, "balanceAfter", "createdAt")
-    VALUES (v_wallet_id, v_total_cost, 'DEBIT'::"TransactionType", 'Asset Purchase', v_new_balance, NOW());
+    INSERT INTO "Transaction" ("walletId", amount, type, status, description, "balanceAfter", "createdAt")
+    VALUES (v_wallet_id, v_total_cost, 'DEBIT'::"TransactionType", 'COMPLETED', 'Asset Purchase', v_new_balance, NOW());
 
     -- 6. Allocate units and grant access
     FOR v_purchase IN SELECT * FROM jsonb_to_recordset(p_purchases) AS x("subcategoryId" TEXT, quantity INTEGER)

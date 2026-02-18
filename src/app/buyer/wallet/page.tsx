@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent, Button, Input, Badge, WhatsAppFAB } from '@/components/ui';
+import Link from 'next/link';
+import { Card, CardContent, Button, Input, Badge, WhatsAppFAB } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 
@@ -15,7 +16,7 @@ interface WalletData {
         description: string;
         balanceAfter: number;
         createdAt: string;
-        status?: 'PENDING' | 'COMPLETED';
+        status?: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REJECTED';
     }>;
 }
 
@@ -39,42 +40,19 @@ function WalletContent() {
     const [selectedNetwork, setSelectedNetwork] = useState('');
     const [cryptoTxId, setCryptoTxId] = useState('');
 
-    useEffect(() => {
-        fetchWallet();
-        fetchCryptoInfo();
-
-        // Handle Paystack callback
-        const payment = searchParams.get('payment');
-        const reference = searchParams.get('reference');
-
-        if (payment === 'callback' && reference) {
-            verifyPaystackPayment(reference);
-        }
-    }, [searchParams]);
-
     const fetchWallet = async () => {
         try {
             const response = await fetch('/api/wallet');
             const data = await response.json();
             if (response.ok) setWallet(data);
-        } catch (error) {
-            console.error('Failed to fetch wallet:', error);
+        } catch {
+            // console.error('Failed to fetch wallet:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchCryptoInfo = async () => {
-        try {
-            const response = await fetch('/api/payments/crypto');
-            const data = await response.json();
-            if (response.ok) setCryptoAddresses(data.addresses);
-        } catch (error) {
-            console.error('Failed to fetch crypto info:', error);
-        }
-    };
-
-    const verifyPaystackPayment = async (reference: string) => {
+    const verifyPaystackPayment = useCallback(async (reference: string) => {
         setProcessing(true);
         setSuccess('');
         setError('');
@@ -96,10 +74,33 @@ function WalletContent() {
             } else {
                 setError(data.error || 'Payment verification failed');
             }
-        } catch (error) {
+        } catch {
             setError('Failed to verify payment');
         } finally {
             setProcessing(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchWallet();
+        fetchCryptoInfo();
+
+        // Handle Paystack callback
+        const payment = searchParams.get('payment');
+        const reference = searchParams.get('reference');
+
+        if (payment === 'callback' && reference) {
+            verifyPaystackPayment(reference);
+        }
+    }, [searchParams, verifyPaystackPayment]);
+
+    const fetchCryptoInfo = async () => {
+        try {
+            const response = await fetch('/api/payments/crypto');
+            const data = await response.json();
+            if (response.ok) setCryptoAddresses(data.addresses);
+        } catch {
+            // console.error('Failed to fetch crypto info:', error);
         }
     };
 
@@ -193,7 +194,14 @@ function WalletContent() {
                     <span className="w-1.5 h-1.5 rounded-full bg-brand" />
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Financial Terminal</span>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-bold text-brand tracking-tight mb-8">My Wallet</h1>
+                
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <h1 className="text-2xl md:text-3xl font-bold text-brand tracking-tight">My Wallet</h1>
+                    <Link href="/buyer" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-brand transition-colors uppercase tracking-widest">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        Back to Dashboard
+                    </Link>
+                </div>
 
                 {/* Messages */}
                 {success && (
@@ -345,7 +353,7 @@ function WalletContent() {
                                         </div>
 
                                         {selectedNetwork && (
-                                            <div className="p-5 bg-brand/[0.02] border border-brand/10 rounded-2xl">
+                                            <div className="p-5 bg-brand/2 border border-brand/10 rounded-2xl">
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Deposit Address</p>
                                                 <div className="flex items-center gap-3">
                                                     <p className="text-brand font-mono text-xs break-all flex-1">
@@ -416,12 +424,27 @@ function WalletContent() {
                                 <div className="divide-y divide-slate-50">
                                     {wallet.transactions.map((tx) => {
                                         const isPending = tx.status === 'PENDING';
+                                        const isFailed = tx.status === 'FAILED' || tx.status === 'REJECTED';
                                         const isCredit = tx.type === 'CREDIT';
-                                        const colorClass = isPending ? 'text-amber-500' : isCredit ? 'text-emerald-500' : 'text-brand';
-                                        const bgClass = isPending ? 'bg-amber-50' : isCredit ? 'bg-emerald-50' : 'bg-slate-50';
-                                        const iconPath = isPending
-                                            ? 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-                                            : isCredit ? 'M12 6v12m6-6H6' : 'M20 12H4';
+
+                                        // Default to DEBIT (Red)
+                                        let colorClass = 'text-red-500';
+                                        let bgClass = 'bg-red-50';
+                                        let iconPath = 'M20 12H4'; // Minus icon
+
+                                        if (isPending) {
+                                            colorClass = 'text-amber-500';
+                                            bgClass = 'bg-amber-50';
+                                            iconPath = 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z';
+                                        } else if (isFailed) {
+                                            colorClass = 'text-red-500';
+                                            bgClass = 'bg-red-50';
+                                            iconPath = 'M6 18L18 6M6 6l12 12';
+                                        } else if (isCredit) {
+                                            colorClass = 'text-emerald-500';
+                                            bgClass = 'bg-emerald-50';
+                                            iconPath = 'M12 6v12m6-6H6'; // Plus icon
+                                        }
 
                                         return (
                                             <div key={tx.id} className="flex items-center justify-between p-5 md:p-6 hover:bg-slate-50/50 transition-colors">

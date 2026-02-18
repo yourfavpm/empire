@@ -123,7 +123,7 @@ export default function BuyerDashboard() {
                                 {/* Low balance prompt */}
                                 {!loading && balance < 5000 && (
                                     <div className="mt-8 p-4 md:p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
-                                        <div className="w-8 h-8 md:w-10 md:h-10 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <div className="w-8 h-8 md:w-10 md:h-10 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center shrink-0">
                                             <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
                                         </div>
                                         <p className="text-[10px] md:text-xs text-slate-500 font-bold leading-relaxed uppercase tracking-wide">
@@ -196,7 +196,7 @@ export default function BuyerDashboard() {
                                                 }}
                                                 className="h-11 px-6 bg-brand hover:bg-brand-dark text-white font-bold text-[10px] uppercase tracking-widest rounded-xl"
                                             >
-                                                Copy Node
+                                                Copy Link
                                             </Button>
                                         </div>
                                     </div>
@@ -238,25 +238,28 @@ export default function BuyerDashboard() {
                                 </div>
                             ) : wallet?.transactions.length ? (
                                 <div className="space-y-3">
-                                    {wallet.transactions.slice(0, 5).map((tx) => (
-                                        <div key={tx.id} className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-xl transition-all hover:bg-white hover:shadow-md">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm ${tx.type === 'CREDIT' ? 'bg-white text-emerald-500' : 'bg-white text-brand'
-                                                    }`}>
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={tx.type === 'CREDIT' ? 'M12 6v12m6-6H6' : 'M20 12H4'} />
-                                                    </svg>
+                                    {wallet.transactions.slice(0, 5).map((tx) => {
+                                        const isCredit = tx.type === 'CREDIT';
+                                        return (
+                                            <div key={tx.id} className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-xl transition-all hover:bg-white hover:shadow-md">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm ${isCredit ? 'bg-emerald-50 text-emerald-500' : 'bg-red-50 text-red-500'
+                                                        }`}>
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isCredit ? 'M12 6v12m6-6H6' : 'M20 12H4'} />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-bold text-brand uppercase tracking-tight">{tx.description}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{formatDate(tx.createdAt)}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-[11px] font-bold text-brand uppercase tracking-tight">{tx.description}</p>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{formatDate(tx.createdAt)}</p>
-                                                </div>
+                                                <span className={`font-bold text-[11px] ${isCredit ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                    {isCredit ? '+' : '-'}{formatCurrency(tx.amount)}
+                                                </span>
                                             </div>
-                                            <span className={`font-bold text-[11px] ${tx.type === 'CREDIT' ? 'text-emerald-500' : 'text-brand'}`}>
-                                                {tx.type === 'CREDIT' ? '+' : '-'}{formatCurrency(tx.amount)}
-                                            </span>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="py-10 text-center">

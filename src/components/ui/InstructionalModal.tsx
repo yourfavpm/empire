@@ -17,6 +17,7 @@ export function InstructionalModal({
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
+            // eslint-disable-next-line
             setAgreedToTerms(false); // Reset on open
         } else {
             document.body.style.overflow = '';
@@ -42,12 +43,13 @@ export function InstructionalModal({
             {/* Modal */}
             <div className="relative w-full max-w-lg bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-cyan-500/10 animate-slideUp overflow-hidden max-h-[90vh] overflow-y-auto">
                 {/* Header Gradient */}
-                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-32 bg-linear-to-b from-cyan-500/10 to-transparent pointer-events-none" />
 
                 <div className="relative p-6 pt-8">
                     {/* Logo & Title */}
                     <div className="text-center mb-6">
-                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-teal-500/20 rounded-2xl mb-4 p-2">
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-cyan-500/20 to-teal-500/20 rounded-2xl mb-4 p-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src="/dylogo.png" alt="DY Empire" className="w-full h-full object-contain" />
                         </div>
                         <h2 className="text-xl font-bold text-white mb-1">Welcome to DY Empire</h2>
@@ -69,7 +71,7 @@ export function InstructionalModal({
                                 { step: '3', title: 'Unlock Assets', desc: 'Browse and unlock premium content' },
                             ].map((item) => (
                                 <div key={item.step} className="flex items-start gap-3">
-                                    <div className="w-6 h-6 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <div className="w-6 h-6 bg-cyan-500/20 rounded-lg flex items-center justify-center shrink-0">
                                         <span className="text-xs font-bold text-cyan-400">{item.step}</span>
                                     </div>
                                     <div>

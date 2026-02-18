@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${poppins.className} bg-white text-brand antialiased`}>
+      <body className={`${poppins.className} bg-white text-brand antialiased font-light`}>
         <Providers>
           {children}
           <CrossPromoBanner />

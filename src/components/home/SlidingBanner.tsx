@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Banner {
     id: string | number;
@@ -32,7 +33,7 @@ export function SlidingBanner({ banners }: SlidingBannerProps) {
     return (
         <div className="w-full bg-white overflow-hidden relative">
             <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-8">
-                <div className="relative aspect-[21/9] md:aspect-[24/7] overflow-hidden rounded-2xl shadow-xl shadow-black/5 border border-slate-100 group">
+                <div className="relative aspect-21/9 md:aspect-24/7 overflow-hidden rounded-2xl shadow-xl shadow-black/5 border border-slate-100 group">
                     {/* Sliding Container */}
                     <div
                         className="flex h-full transition-transform duration-700 ease-out"
@@ -41,13 +42,14 @@ export function SlidingBanner({ banners }: SlidingBannerProps) {
                         {banners.map((banner) => (
                             <div
                                 key={banner.id}
-                                className="w-full h-full flex-shrink-0 relative"
+                                className="w-full h-full shrink-0 relative"
                             >
                                 <Link href={banner.link || '#'} className="block h-full w-full">
-                                    <img
+                                    <Image
                                         src={banner.content}
                                         alt="Promotional Banner"
-                                        className="w-full h-full object-cover select-none"
+                                        fill
+                                        className="object-cover select-none"
                                     />
                                 </Link>
                             </div>
