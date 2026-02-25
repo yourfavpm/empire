@@ -1,6 +1,7 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import { isAuthorized } from '@/lib/roles';
+import { usePathname } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Badge, StatusBadge } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
@@ -41,6 +42,11 @@ interface AssetUnit {
 }
 
 export default function AdminAssetManagement() {
+    const { data: session } = useSession();
+    const pathname = usePathname();
+    const userRole = session?.user?.role;
+    const isAuthorizedUser = isAuthorized(userRole, pathname);
+
     const [categories, setCategories] = useState<Category[]>([]);
     const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
     const [units, setUnits] = useState<AssetUnit[]>([]);
@@ -65,9 +71,30 @@ export default function AdminAssetManagement() {
     const [newSubTutorial, setNewSubTutorial] = useState('');
     const [bulkUnits, setBulkUnits] = useState('');
 
-    useEffect(() => {
-        fetchCategories();
+    const fetchCategories = useCallback(async () => {
+        const res = await fetch('/api/admin/categories');
+        const data = await res.json();
+        if (res.ok) setCategories(data.categories);
+        setLoading(false);
     }, []);
+
+    const fetchSubcategories = useCallback(async (catId: string) => {
+        const res = await fetch(`/api/admin/subcategories?categoryId=${catId}`);
+        const data = await res.json();
+        if (res.ok) setSubcategories(data.subcategories);
+    }, []);
+
+    const fetchUnits = useCallback(async (subId: string) => {
+        const res = await fetch(`/api/admin/asset-units?subcategoryId=${subId}`);
+        const data = await res.json();
+        if (res.ok) setUnits(data.units);
+    }, []);
+
+    useEffect(() => {
+        if (isAuthorizedUser) {
+            fetchCategories();
+        }
+    }, [isAuthorizedUser, fetchCategories]);
 
     useEffect(() => {
         if (selectedCategoryId) {
@@ -75,32 +102,30 @@ export default function AdminAssetManagement() {
             setSelectedSubcategoryId(null);
             setUnits([]);
         }
-    }, [selectedCategoryId]);
+    }, [selectedCategoryId, fetchSubcategories]);
 
     useEffect(() => {
         if (selectedSubcategoryId) {
             fetchUnits(selectedSubcategoryId);
         }
-    }, [selectedSubcategoryId]);
+    }, [selectedSubcategoryId, fetchUnits]);
 
-    const fetchCategories = async () => {
-        const res = await fetch('/api/admin/categories');
-        const data = await res.json();
-        if (res.ok) setCategories(data.categories);
-        setLoading(false);
-    };
-
-    const fetchSubcategories = async (catId: string) => {
-        const res = await fetch(`/api/admin/subcategories?categoryId=${catId}`);
-        const data = await res.json();
-        if (res.ok) setSubcategories(data.subcategories);
-    };
-
-    const fetchUnits = async (subId: string) => {
-        const res = await fetch(`/api/admin/asset-units?subcategoryId=${subId}`);
-        const data = await res.json();
-        if (res.ok) setUnits(data.units);
-    };
+    if (userRole && !isAuthorizedUser) {
+        return (
+            <div className="flex items-center justify-center p-20">
+                <Card className="max-w-md w-full border-red-100 bg-red-50/10">
+                    <CardContent className="p-12 text-center">
+                        <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-600">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <h2 className="text-xl font-black text-red-600 uppercase tracking-tight mb-2">Access Denied</h2>
+                        <p className="text-sm font-bold text-slate-500 mb-8">You do not have the required authorization level to access Inventory Control.</p>
+                        <Button className="w-full bg-red-600 font-black uppercase tracking-widest text-[10px]" onClick={() => window.location.href = '/admin'}>Return to Dashboard</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     const handleCreateCategory = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -158,7 +183,7 @@ export default function AdminAssetManagement() {
                 const data = await res.json();
                 toast.error(data.error || 'Failed to create subcategory');
             }
-        } catch (error) {
+        } catch {
             toast.error('Network error');
         }
     };
@@ -190,7 +215,7 @@ export default function AdminAssetManagement() {
                 const data = await res.json();
                 toast.error(data.error || 'Failed to import units');
             }
-        } catch (error) {
+        } catch {
             toast.error('Network error');
         }
     };
@@ -211,7 +236,7 @@ export default function AdminAssetManagement() {
             } else {
                 toast.error('Failed to delete category');
             }
-        } catch (error) {
+        } catch {
             toast.error('Network error');
         }
     };
@@ -231,7 +256,7 @@ export default function AdminAssetManagement() {
             } else {
                 toast.error('Failed to delete product');
             }
-        } catch (error) {
+        } catch {
             toast.error('Network error');
         }
     };
@@ -247,7 +272,7 @@ export default function AdminAssetManagement() {
             } else {
                 toast.error('Failed to delete unit');
             }
-        } catch (error) {
+        } catch {
             toast.error('Network error');
         }
     };

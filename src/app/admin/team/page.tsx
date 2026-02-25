@@ -1,11 +1,11 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, Button, Input, StatusBadge } from '@/components/ui';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, CardHeader, CardTitle, CardContent, Button, Input } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
+import { AdminRole, ROLE_CONFIGS } from '@/lib/roles';
 
 interface AdminUser {
     id: string;
@@ -17,17 +17,12 @@ interface AdminUser {
     lastLogin?: string;
 }
 
-const ADMIN_ROLES = [
-    { id: 'SUPER_ADMIN', name: 'Super Admin', desc: 'Full system access & team mgmt' },
-    { id: 'GENERAL_ADMIN', name: 'General Admin', desc: 'Manage everything except team' },
-    { id: 'FINANCE_MANAGER', name: 'Finance Manager', desc: 'Payments & user accounts' },
-    { id: 'INVENTORY_MANAGER', name: 'Inventory Manager', desc: 'Assets & Stock only' },
-];
+const ADMIN_ROLES = Object.values(ROLE_CONFIGS).filter(r => r.id !== AdminRole.ADMIN);
 
 export default function AdminTeamPage() {
     const { data: session } = useSession();
     const currentUserRole = session?.user?.role;
-    const isSuperAdmin = currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN';
+    const isSuperAdmin = currentUserRole === AdminRole.SUPER_ADMIN || currentUserRole === AdminRole.ADMIN;
 
     const [admins, setAdmins] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
@@ -40,21 +35,45 @@ export default function AdminTeamPage() {
     const [newRole, setNewRole] = useState('GENERAL_ADMIN');
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        fetchAdmins();
-    }, []);
-
-    const fetchAdmins = async () => {
+    const fetchAdmins = useCallback(async () => {
+        setLoading(true);
         try {
             const res = await fetch('/api/admin/team');
             const data = await res.json();
-            if (res.ok) setAdmins(data.admins);
-        } catch (error) {
+            if (res.ok) {
+                setAdmins(data.admins);
+            } else {
+                toast.error(data.error || 'Failed to fetch directory');
+            }
+        } catch {
             console.error('Failed to fetch admins');
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (currentUserRole && isSuperAdmin) {
+            fetchAdmins();
+        }
+    }, [currentUserRole, isSuperAdmin, fetchAdmins]);
+
+    if (currentUserRole && !isSuperAdmin) {
+        return (
+            <div className="flex items-center justify-center p-20">
+                <Card className="max-w-md w-full border-red-100 bg-red-50/10">
+                    <CardContent className="p-12 text-center">
+                        <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-600">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <h2 className="text-xl font-black text-red-600 uppercase tracking-tight mb-2">Access Denied</h2>
+                        <p className="text-sm font-bold text-slate-500 mb-8">This module requires SUPER_ADMIN clearance. Your current authorization level is insufficient.</p>
+                        <Button className="w-full bg-red-600 font-black uppercase tracking-widest text-[10px]" onClick={() => window.location.href = '/admin'}>Return to Dashboard</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -84,7 +103,7 @@ export default function AdminTeamPage() {
             } else {
                 toast.error(data.error || 'Failed to authorize admin');
             }
-        } catch (error) {
+        } catch {
             toast.error('Something went wrong');
         } finally {
             setSubmitting(false);
@@ -111,7 +130,7 @@ export default function AdminTeamPage() {
                 const data = await res.json();
                 toast.error(data.error || `Failed to ${action} admin`);
             }
-        } catch (error) {
+        } catch {
             toast.error('Operation failed');
         }
     };

@@ -3,15 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { auth } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
-
-const ADMIN_ROLES = ['SUPER_ADMIN', 'GENERAL_ADMIN', 'FINANCE_MANAGER', 'INVENTORY_MANAGER'];
+import { AdminRole, ADMIN_ROLES } from '@/lib/roles';
 
 // GET /api/admin/team - List all admins
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
     try {
         const session = await auth();
         // Allow any admin role to view the list (though UI might hide it for some)
-        if (!session?.user?.id || !ADMIN_ROLES.includes(session.user.role)) {
+        if (!session?.user?.id || !ADMIN_ROLES.includes(session.user.role as AdminRole)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -35,7 +34,7 @@ export async function POST(request: NextRequest) {
     try {
         const session = await auth();
         // ONLY Super Admin can create new admins
-        if (!session?.user?.id || session.user.role !== 'SUPER_ADMIN') {
+        if (!session?.user?.id || (session.user.role !== AdminRole.SUPER_ADMIN && session.user.role !== AdminRole.ADMIN)) {
             return NextResponse.json({ error: 'Unauthorized: Only Super Admins can add team members' }, { status: 403 });
         }
 
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
     try {
         const session = await auth();
-        if (!session?.user?.id || session.user.role !== 'SUPER_ADMIN') {
+        if (!session?.user?.id || (session.user.role !== AdminRole.SUPER_ADMIN && session.user.role !== AdminRole.ADMIN)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import NextAuth from 'next-auth';
 import { authConfig } from '@/lib/auth.config';
+import { isAuthorized, AdminRole } from '@/lib/roles';
 
 const { auth } = NextAuth(authConfig);
 
@@ -8,7 +9,7 @@ export default auth((req) => {
     const { nextUrl } = req;
     const isLoggedIn = !!req.auth;
     const userRole = req.auth?.user?.role;
-    const ADMIN_ROLES = ['SUPER_ADMIN', 'GENERAL_ADMIN', 'FINANCE_MANAGER', 'INVENTORY_MANAGER', 'ADMIN'];
+    const ADMIN_ROLES = Object.values(AdminRole) as string[];
 
     // Define protected route patterns
     const isAdminRoute = nextUrl.pathname.startsWith('/admin');
@@ -20,16 +21,6 @@ export default auth((req) => {
     if (isApiRoute) {
         return NextResponse.next();
     }
-
-    // Allow all users (logged in or not) to see the landing page
-    /*
-    if (nextUrl.pathname === '/' && isLoggedIn) {
-        if (ADMIN_ROLES.includes(userRole as string)) {
-            return NextResponse.redirect(new URL('/admin', nextUrl));
-        }
-        return NextResponse.redirect(new URL('/buyer', nextUrl));
-    }
-    */
 
     // Redirect logged-in users away from auth pages
     if (isAuthRoute && isLoggedIn) {
@@ -44,7 +35,12 @@ export default auth((req) => {
         if (!isLoggedIn) {
             return NextResponse.redirect(new URL('/login', nextUrl));
         }
-        if (!ADMIN_ROLES.includes(userRole as string)) {
+        
+        if (!isAuthorized(userRole, nextUrl.pathname)) {
+            // If they are an admin but not authorized for this specific route, send to dashboard or buyer
+            if (ADMIN_ROLES.includes(userRole as string)) {
+                return NextResponse.redirect(new URL('/admin', nextUrl));
+            }
             return NextResponse.redirect(new URL('/buyer', nextUrl));
         }
     }

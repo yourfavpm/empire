@@ -1,6 +1,7 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import { isAuthorized } from '@/lib/roles';
+import { usePathname } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Badge } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 
@@ -28,6 +29,11 @@ interface Conversation {
 }
 
 export default function AdminMessagesPage() {
+    const { data: session } = useSession();
+    const pathname = usePathname();
+    const userRole = session?.user?.role;
+    const isAuthorizedUser = isAuthorized(userRole, pathname);
+
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -35,11 +41,7 @@ export default function AdminMessagesPage() {
     const [replyContent, setReplyContent] = useState('');
     const [sending, setSending] = useState(false);
 
-    useEffect(() => {
-        fetchMessages();
-    }, []);
-
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         try {
             const response = await fetch('/api/messages');
             const data = await response.json();
@@ -49,7 +51,30 @@ export default function AdminMessagesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (isAuthorizedUser) {
+            fetchMessages();
+        }
+    }, [fetchMessages, isAuthorizedUser]);
+
+    if (userRole && !isAuthorizedUser) {
+        return (
+            <div className="flex items-center justify-center p-20">
+                <Card className="max-w-md w-full border-red-100 bg-red-50/10">
+                    <CardContent className="p-12 text-center">
+                        <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-600">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <h2 className="text-xl font-black text-red-600 uppercase tracking-tight mb-2">Access Denied</h2>
+                        <p className="text-sm font-bold text-slate-500 mb-8">You do not have the required authorization level to access Messages & Support.</p>
+                        <Button className="w-full bg-red-600 font-black uppercase tracking-widest text-[10px]" onClick={() => window.location.href = '/admin'}>Return to Dashboard</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     const handleSendReply = async (e: React.FormEvent) => {
         e.preventDefault();
