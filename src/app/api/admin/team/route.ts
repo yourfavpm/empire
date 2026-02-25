@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import { AdminRole, ADMIN_ROLES } from '@/lib/roles';
 
 // GET /api/admin/team - List all admins
-export async function GET(_request: NextRequest) {
+export async function GET() {
     try {
         const session = await auth();
         // Allow any admin role to view the list (though UI might hide it for some)
