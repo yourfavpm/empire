@@ -9,6 +9,15 @@ export enum AdminRole {
 
 export const ADMIN_ROLES = Object.values(AdminRole);
 
+/**
+ * Emails that are always granted SUPER_ADMIN privileges,
+ * regardless of what is stored in the database.
+ */
+export const ROOT_ADMIN_EMAILS = [
+    'dyempiremarketplace@gmail.com',
+    'admin@empire.com' // Keeping existing admin for safety
+];
+
 export interface RoleConfig {
     id: AdminRole;
     name: string;
