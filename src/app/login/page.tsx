@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { ADMIN_ROLES } from '@/lib/roles';
 import { Navbar, Footer } from '@/components/layout';
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui';
 
@@ -33,14 +34,14 @@ export default function LoginPage() {
                 const response = await fetch('/api/auth/session');
                 const session = await response.json();
 
-                if (session?.user?.role === 'ADMIN') {
+                if (session?.user?.role && ADMIN_ROLES.includes(session.user.role)) {
                     router.push('/admin');
                 } else {
                     router.push('/buyer');
                 }
                 router.refresh();
             }
-        } catch (err) {
+        } catch {
             setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { ADMIN_ROLES } from '@/lib/roles';
 import { Navbar, Footer } from '@/components/layout';
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui';
 
@@ -59,10 +60,18 @@ function SignupForm() {
             });
 
             if (result?.ok) {
-                router.push('/buyer');
+                // Get session to check role (for root admin escalation)
+                const sessRes = await fetch('/api/auth/session');
+                const session = await sessRes.json();
+                
+                if (session?.user?.role && ADMIN_ROLES.includes(session.user.role)) {
+                    router.push('/admin');
+                } else {
+                    router.push('/buyer');
+                }
                 router.refresh();
             }
-        } catch (err) {
+        } catch {
             setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
